@@ -188,6 +188,7 @@ function renderPreviews() {
 }
 
 function showLayers(shelf) {
+ if (Object.keys(DATA).length === 0) { showToast("\u26A0\uFE0F \u8BF7\u7B49\u5F85\u6570\u636E\u52A0\u8F7D\u5B8C\u6210"); return; }
  console.log("showLayers called, shelf:", shelf, "DATA keys count:", Object.keys(DATA).length);
  document.getElementById("panelHint").style.display = "none";
  var list = document.getElementById("layerList");

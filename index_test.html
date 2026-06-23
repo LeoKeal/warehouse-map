@@ -126,6 +126,7 @@ var KEY_NAME = ["品名", "物料名称", "名称", "商品名称"];
 var KEY_SPEC = ["规格", "规格型号", "型号"];
 var KEY_QTY = ["可用量", "库存量", "数量", "可用库存", "当前库存"];
 var KEY_IMG = ["图片", "物料图片", "图片路径", "照片", "图片URL"];
+var KEY_SAFE = ["安全库存", "安全库存量", "安全量", "最低库存", "最低库存量"];
 var KEY_NOTE = ["备注", "备注信息", "说明"];
 
 // ===== 全局数据 =====
@@ -172,8 +173,9 @@ function getSlotStatus(loc) {
   }
   var it = items[0];
   if (!it.name || it.qty === 0) return { cls: "ms-empty", tip: "空库位", color: "#334" };
-  if (it.qty <= 10) return { cls: "ms-crit", tip: it.name + " x" + it.qty, color: "#e74c3c" };
-  if (it.qty <= 50) return { cls: "ms-low", tip: it.name + " x" + it.qty, color: "#f4d03f" };
+  var safe = it.safeQty || 0;
+  if (safe > 0 && it.qty < safe) return { cls: "ms-crit", tip: it.name + " x" + it.qty, color: "#e74c3c" };
+  if (it.qty <= 10) return { cls: "ms-low", tip: it.name + " x" + it.qty, color: "#f4d03f" };
   return { cls: "ms-occ", tip: it.name + " x" + it.qty, color: "#4cc9f0" };
 }
 
@@ -206,7 +208,7 @@ function loadExcel(file) {
         var name = getVal(row, KEY_NAME, "");
         var itemno = getVal(row, KEY_ITEMNO, "");
         var spec = getVal(row, KEY_SPEC, "");
-        var img = getVal(row, KEY_IMG, "");
+        var safeQty = parseFloat(getVal(row, KEY_SAFE, "0")) || 0;
         var note = getVal(row, KEY_NOTE, "");
 
         var item = {
@@ -214,7 +216,9 @@ function loadExcel(file) {
           name: name,
           spec: spec,
           qty: qty,
-          img: img,
+          safeQty: safeQty,
+          // 图片路径自动用 料号 命名，格式: images/料号.jpg
+          img: itemno ? "images/" + itemno + ".jpg" : "",
           note: note,
           _raw: row
         };
@@ -327,8 +331,9 @@ function calcStatsForLayer(locations) {
   for (var i = 0; i < locations.length; i++) {
     var items = locations[i].items;
     var hasOccupied = items.some(function(it) { return it.name && it.qty > 0; });
-    var hasCrit = items.some(function(it) { return it.qty > 0 && it.qty <= 10; });
-    var hasLow = items.some(function(it) { return it.qty > 10 && it.qty <= 50; });
+    var hasSafe = items.some(function(it) { var q = it.qty||0, s = it.safeQty||0; return s>0 && q<s; });
+    var hasCrit = items.some(function(it) { var q = it.qty||0, s = it.safeQty||0; return q>0 && s>0 && q<s; });
+    var hasLow = items.some(function(it) { var q = it.qty||0, s = it.safeQty||0; return s>0 && q>=s && q<=s*2; });
     if (hasOccupied) occ++;
     if (hasCrit) crit++;
     else if (hasLow) low++;
@@ -511,7 +516,14 @@ function showModal(loc) {
     // 切换料号标签
     if (it.itemno && it.itemno !== "") {
       tag.style.display = "block";
-      tag.textContent = "料号: " + it.itemno;
+      var safe = it.safeQty || 0;
+      var q = it.qty || 0;
+      var belowSafe = !!(safe > 0 && q < safe);
+      var labelText = "料号: " + it.itemno;
+      if (belowSafe) labelText += " ⚠️";
+      tag.textContent = labelText;
+      tag.style.color = belowSafe ? "#e74c3c" : "#4cc9f0";
+      tag.style.borderColor = belowSafe ? "#e74c3c" : "#4cc9f0";
     } else {
       tag.style.display = "none";
     }
@@ -541,24 +553,31 @@ function showModal(loc) {
     nameEl.style.cssText = "font-size:13px;color:#4cc9f0;font-weight:bold;flex:1";
     nameEl.textContent = (items.length > 1 ? (i + 1) + ". " : "") + (empty ? "(空)" : n);
 
+    var safeQty = it.safeQty || 0;
+    var belowSafe = !empty && safeQty > 0 && q < safeQty;
     var qtyEl = document.createElement("div");
     qtyEl.style.cssText = "font-size:12px;font-weight:bold;padding:2px 8px;border-radius:10px";
     if (empty) qtyEl.style.cssText += "background:#111827;color:#444";
+    else if (belowSafe) qtyEl.style.cssText += "background:#2a0000;color:#e74c3c";
     else if (q <= 10) qtyEl.style.cssText += "background:#2a0000;color:#e74c3c";
-    else if (q <= 50) qtyEl.style.cssText += "background:#2a2000;color:#f4d03f";
     else qtyEl.style.cssText += "background:#0a2040;color:#27ae60";
     qtyEl.textContent = empty ? "空" : q;
     if (!empty && it._raw && it._raw["单位"]) qtyEl.textContent += " " + it._raw["单位"];
+    if (belowSafe) qtyEl.textContent += " ⚠️";
 
     header.appendChild(nameEl);
     header.appendChild(qtyEl);
 
-    // 明细行
+    // 明细行：料号 | 规格 | 安全库存
     var detailRow = document.createElement("div");
-    detailRow.style.cssText = "font-size:11px;color:#6a8aaa";
-    var detailText = (it.itemno ? "料号: <span style='color:#4cc9f0'>" + it.itemno + "</span>" : "") +
-      (it.spec ? " &nbsp;规格: <span style='color:#4cc9f0'>" + it.spec + "</span>" : "");
-    detailRow.innerHTML = detailText || "<span style='color:#333'>—</span>";
+    detailRow.style.cssText = "font-size:11px;color:#6a8aaa;line-height:1.6";
+    var unit = it._raw && it._raw["单位"] ? " " + it._raw["单位"] : "";
+    var parts = [
+      it.itemno ? "料号: <span style='color:#4cc9f0'>" + it.itemno + "</span>" : "",
+      it.spec ? "规格: <span style='color:#4cc9f0'>" + it.spec + "</span>" : "",
+      safeQty > 0 ? "安全库存: <span style='color:#f39c12'>" + safeQty + unit + "</span>" : ""
+    ];
+    detailRow.innerHTML = parts.filter(function(p) { return p; }).join(" &nbsp;|&nbsp; ") || "<span style='color:#333'>—</span>";
 
     card.appendChild(header);
     card.appendChild(detailRow);
@@ -686,7 +705,8 @@ document.addEventListener("keydown", function(e) {
               DATA[code] = { code: code, shelf: shelf, layer: layer, pos: pos, items: [] };
               shelves.add(shelf);
             }
-            DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, img: img, note: note, _raw: { "单位": unit } });
+            var safeQty = parseFloat(row["安全库存"] || "0") || 0;
+            DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, safeQty: safeQty, img: itemno ? "images/" + itemno + ".jpg" : "", note: note, _raw: { "单位": unit } });
           }
           var shelfList = Array.from(shelves).sort();
           document.getElementById("fileName").textContent = "data.json (已自动加载)";

@@ -161,22 +161,20 @@ function convertCode(raw) {
   return shelf + "-L" + layer + "-P" + String(pos).padStart(3, "0");
 }
 
-// ===== 渲染货位色块的状态 =====
-// 返回 { cls, tip, isMulti }
 function getSlotStatus(loc) {
   var items = loc.items;
   if (items.length === 0) return { cls: "ms-empty", tip: "空库位", color: "#334" };
   if (items.length > 1) {
-    var totalQty = items.reduce(function(s, it) { return s + (it.qty || 0); }, 0);
-    var hasCrit = items.some(function(it) { return it.qty > 0 && it.qty <= 10; });
-    return { cls: "ms-multi", tip: "共" + items.length + "种物料", color: "#9b59b6" };
+    var anyBelow = items.some(function(it) { return (it.safeQty || 0) > 0 && (it.qty || 0) < it.safeQty; });
+    return { cls: "ms-multi", tip: "共" + items.length + "种物料" + (anyBelow ? " ⚠️" : ""), color: anyBelow ? "#e74c3c" : "#9b59b6" };
   }
   var it = items[0];
-  if (!it.name || it.qty === 0) return { cls: "ms-empty", tip: "空库位", color: "#334" };
   var safe = it.safeQty || 0;
-  if (safe > 0 && it.qty < safe) return { cls: "ms-crit", tip: it.name + " x" + it.qty, color: "#e74c3c" };
-  if (it.qty <= 10) return { cls: "ms-low", tip: it.name + " x" + it.qty, color: "#f4d03f" };
-  return { cls: "ms-occ", tip: it.name + " x" + it.qty, color: "#4cc9f0" };
+  var q = it.qty || 0;
+  if (!it.name || q === 0) return { cls: "ms-empty", tip: "空库位", color: "#334" };
+  if (safe > 0 && q < safe) return { cls: "ms-crit", tip: it.name + " x" + q + " ⚠️", color: "#e74c3c" };
+  if (safe > 0 && q < safe * 2) return { cls: "ms-low", tip: it.name + " x" + q, color: "#f4d03f" };
+  return { cls: "ms-occ", tip: it.name + " x" + q, color: "#4cc9f0" };
 }
 
 // ===== 加载 Excel =====
@@ -534,7 +532,11 @@ function showModal(loc) {
     var it = items[i];
     var q = it.qty || 0;
     var n = it.name || "";
+    var unit = it._raw && it._raw["单位"] ? " " + it._raw["单位"] : "";
+    var safe = it.safeQty || 0;
     var empty = !n || q === 0;
+    var belowSafe = !empty && safe > 0 && q < safe;
+    var lowSafe = !empty && safe > 0 && q >= safe && q < safe * 2;
 
     var card = document.createElement("div");
     card.className = "modal-item-card";
@@ -553,17 +555,13 @@ function showModal(loc) {
     nameEl.style.cssText = "font-size:13px;color:#4cc9f0;font-weight:bold;flex:1";
     nameEl.textContent = (items.length > 1 ? (i + 1) + ". " : "") + (empty ? "(空)" : n);
 
-    var safeQty = it.safeQty || 0;
-    var belowSafe = !empty && safeQty > 0 && q < safeQty;
     var qtyEl = document.createElement("div");
     qtyEl.style.cssText = "font-size:12px;font-weight:bold;padding:2px 8px;border-radius:10px";
     if (empty) qtyEl.style.cssText += "background:#111827;color:#444";
     else if (belowSafe) qtyEl.style.cssText += "background:#2a0000;color:#e74c3c";
-    else if (q <= 10) qtyEl.style.cssText += "background:#2a0000;color:#e74c3c";
+    else if (lowSafe) qtyEl.style.cssText += "background:#2a2000;color:#f4d03f";
     else qtyEl.style.cssText += "background:#0a2040;color:#27ae60";
-    qtyEl.textContent = empty ? "空" : q;
-    if (!empty && it._raw && it._raw["单位"]) qtyEl.textContent += " " + it._raw["单位"];
-    if (belowSafe) qtyEl.textContent += " ⚠️";
+    qtyEl.textContent = empty ? "空" : q + unit + (belowSafe ? " ⚠️" : "");
 
     header.appendChild(nameEl);
     header.appendChild(qtyEl);
@@ -571,11 +569,10 @@ function showModal(loc) {
     // 明细行：料号 | 规格 | 安全库存
     var detailRow = document.createElement("div");
     detailRow.style.cssText = "font-size:11px;color:#6a8aaa;line-height:1.6";
-    var unit = it._raw && it._raw["单位"] ? " " + it._raw["单位"] : "";
     var parts = [
       it.itemno ? "料号: <span style='color:#4cc9f0'>" + it.itemno + "</span>" : "",
       it.spec ? "规格: <span style='color:#4cc9f0'>" + it.spec + "</span>" : "",
-      safeQty > 0 ? "安全库存: <span style='color:#f39c12'>" + safeQty + unit + "</span>" : ""
+      safe > 0 ? "安全库存: <span style='color:#f39c12'>" + safe + unit + "</span>" : ""
     ];
     detailRow.innerHTML = parts.filter(function(p) { return p; }).join(" &nbsp;|&nbsp; ") || "<span style='color:#333'>—</span>";
 

@@ -27,12 +27,15 @@
  .shelf-sub{font-size:12px;color:#4a6080}
  .shelf-layers{font-size:11px;color:#2a4a6a;margin-top:4px}
  .layer-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
- .mini-slot{width:28px;height:20px;border-radius:3px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px}
+ .mini-slot{width:28px;height:20px;border-radius:3px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;position:relative}
  .ms-occ{border-color:#4cc9f0;background:#0a2040;color:#4cc9f0}
  .ms-empty{border-color:#1e2d3d;background:#111827;color:#334}
  .ms-low{border-color:#f4d03f;background:#2a2200;color:#f4d03f}
  .ms-crit{border-color:#e74c3c;background:#2a0000;color:#e74c3c;animation:pulse 1.5s infinite}
+ .ms-multi{border-color:#9b59b6;background:#1a0a28;color:#9b59b6;animation:pulse-multi 2s infinite}
  @keyframes pulse{0%,100%{box-shadow:0 0 0 rgba(231,76,60,0)}50%{box-shadow:0 0 8px rgba(231,76,60,.4)}}
+ @keyframes pulse-multi{0%,100%{box-shadow:0 0 0 rgba(155,89,182,0)}50%{box-shadow:0 0 8px rgba(155,89,182,.5)}}
+ .multi-dot{position:absolute;bottom:1px;right:1px;width:7px;height:7px;background:#9b59b6;border-radius:50%;font-size:0;line-height:0}
  .panel{width:360px;background:#0d1f38;border-left:2px solid #1a3a5c;padding:20px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
  .panel-title{font-size:15px;color:#4cc9f0;font-weight:900;padding-bottom:12px;border-bottom:1px solid #1a3a5c;margin-bottom:16px}
  .panel-hint{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#2a3a5a;font-size:14px;gap:10px;text-align:center}
@@ -43,30 +46,31 @@
  .layer-card-title{font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
  .layer-card-count{font-size:11px;color:#888}
  .pos-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
- .pos-dot{width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s}
+ .pos-dot{width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;position:relative}
  .pos-dot:hover{transform:scale(1.15)}
+ .multi-badge{position:absolute;top:-5px;right:-5px;min-width:12px;height:12px;background:#9b59b6;color:#fff;border-radius:6px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 2px}
  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
  .modal-overlay.show{display:flex}
- .modal{background:linear-gradient(135deg,#0d1f38,#0a1628);border:2px solid #4cc9f0;border-radius:16px;width:460px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}
- .modal-header{background:#0a2040;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a3a5c}
+ .modal{background:linear-gradient(135deg,#0d1f38,#0a1628);border:2px solid #4cc9f0;border-radius:16px;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;max-height:85vh;display:flex;flex-direction:column}
+ .modal-header{background:#0a2040;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a3a5c;flex-shrink:0}
  .modal-header h2{font-size:16px;color:#4cc9f0;font-weight:900}
  .modal-close{background:none;border:none;color:#888;font-size:22px;cursor:pointer}
  .modal-close:hover{color:#e94560}
- .modal-body{padding:18px;display:flex;flex-direction:column;gap:12px}
- .modal-img{width:100%;height:140px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden}
- .modal-img img{max-width:100%;max-height:130px;object-fit:contain}
- .modal-img .no-img{color:#2a3a5a;font-size:13px}
- .modal-row{display:flex;gap:12px}
- .modal-label{font-size:11px;color:#4a6080;text-transform:uppercase;letter-spacing:1px;width:56px;flex-shrink:0;padding-top:2px}
- .modal-value{font-size:14px;color:#e0e0e0;font-weight:700;flex:1}
- .modal-value.highlight{color:#4cc9f0;font-size:18px}
- .modal-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:900}
- .badge-occ{background:#0a2040;color:#4cc9f0;border:1px solid #4cc9f0}
- .badge-empty{background:#1a1a1a;color:#444;border:1px solid #333}
- .badge-low{background:#2a2000;color:#f4d03f;border:1px solid #f4d03f}
- .badge-critical{background:#2a0000;color:#e74c3c;border:1px solid #e74c3c;animation:badge-blink 1.5s infinite}
- @keyframes badge-blink{0%,100%{opacity:1}50%{opacity:.6}}
- .modal-divider{height:1px;background:#0f3460}
+ .modal-body{padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+ .modal-location{background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 14px;font-size:13px;color:#4cc9f0;font-weight:bold;text-align:center;flex-shrink:0}
+ .modal-items-count{font-size:11px;color:#9b59b6;font-weight:normal;margin-left:8px}
+ .modal-item-card{background:#0a1628;border:1px solid #1a3a5c;border-radius:8px;padding:10px 12px;transition:all .2s}
+ .modal-item-card:hover{border-color:#4cc9f0}
+ .modal-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+ .modal-item-name{font-size:13px;color:#4cc9f0;font-weight:bold;flex:1}
+ .modal-item-qty{font-size:13px;font-weight:bold;padding:2px 8px;border-radius:10px}
+ .modal-item-qty.low{background:#2a2000;color:#f4d03f}
+ .modal-item-qty.crit{background:#2a0000;color:#e74c3c;animation:badge-blink 1.5s infinite}
+ .modal-item-qty.ok{background:#0a2040;color:#27ae60}
+ .modal-item-qty.empty{background:#111827;color:#444}
+ .modal-item-row{display:flex;gap:12px;font-size:12px;color:#6a8aaa}
+ .modal-item-row span{color:#4cc9f0;font-weight:600}
+ .modal-divider{height:1px;background:#0f3460;flex-shrink:0}
  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0d1f38;border:2px solid #4cc9f0;color:#4cc9f0;padding:8px 22px;border-radius:10px;font-size:13px;opacity:0;transition:all .35s;pointer-events:none;z-index:9999}
  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
  .tip{text-align:center;font-size:11px;color:#2a3a5a;padding:8px;width:100%}
@@ -93,7 +97,7 @@
    <div class="empty-board" id="emptyBoard">
      <div class="empty-board-icon">📂</div>
      <div>请选择 Excel 数据源文件</div>
-     <div class="data-info">支持 .xlsx / .xls 格式<br>表头需包含：料号、库位、品名、规格、可用量</div>
+     <div class="data-info">支持 .xlsx / .xls 格式<br>表头需包含：料号、库位、品名、规格、可用量<br><span style="color:#9b59b6">✅ 支持同库位存放多种物料</span></div>
    </div>
    <div class="tip" id="boardTip" style="display:none">👆 点击货架 → 选择层数 → 点击货位查看详情</div>
  </div>
@@ -109,41 +113,33 @@
      <h2 id="modalTitle">📦 货位详情</h2>
      <button class="modal-close" onclick="closeModal()">×</button>
    </div>
-   <div class="modal-body">
-     <div class="modal-img" id="modalImg"><div class="no-img">暂无图片</div></div>
-     <div class="modal-row"><div class="modal-label">库位</div><div class="modal-value highlight" id="m-code">-</div></div>
-     <div class="modal-row"><div class="modal-label">料号</div><div class="modal-value" id="m-itemno">-</div></div>
-     <div class="modal-row"><div class="modal-label">品名</div><div class="modal-value" id="m-name">-</div></div>
-     <div class="modal-row"><div class="modal-label">规格</div><div class="modal-value" id="m-spec">-</div></div>
-     <div class="modal-row"><div class="modal-label">可用量</div><div class="modal-value" id="m-qty">-</div></div>
-     <div class="modal-divider"></div>
-     <div class="modal-row"><div class="modal-label">备注</div><div class="modal-value" id="m-note" style="font-size:12px;color:#6a8aaa">-</div></div>
+   <div class="modal-body" id="modalBody">
    </div>
  </div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
-// ===== Excel 数据键名（兼容多种命名方式）=====
+// ===== 字段名兼容列表（Excel表头可能的不同命名）=====
 var KEY_CODE = ["库位", "库位编码", "货位", "库位编号", "位置"];
 var KEY_ITEMNO = ["料号", "物料编号", "编码", "SKU", "商品编号"];
-var KEY_NAME = ["品名", "物料名称", "名称", "名称", "商品名称"];
-var KEY_SPEC = ["规格", "规格型号", "型号", "规格型号"];
+var KEY_NAME = ["品名", "物料名称", "名称", "商品名称"];
+var KEY_SPEC = ["规格", "规格型号", "型号"];
 var KEY_QTY = ["可用量", "库存量", "数量", "可用库存", "当前库存"];
 var KEY_IMG = ["图片", "物料图片", "图片路径", "照片", "图片URL"];
-var KEY_NOTE = ["备注", "备注信息", "说明", "备注说明"];
+var KEY_NOTE = ["备注", "备注信息", "说明"];
 
 // ===== 全局数据 =====
-var RAW_DATA = [];   // 原始行数据
-var DATA = {};       // 按库位编码索引
+// DATA[code] = { code, items: [...], shelf, layer, pos }
+// items 数组支持同库位多物料
+var DATA = {};
 
-// ===== 通用字段查找 =====
+// ===== 字段查找工具 =====
 function findKey(row, candidates) {
   for (var k of candidates) {
     if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== "") return k;
   }
   return null;
 }
-
 function getVal(row, candidates, def) {
   var k = findKey(row, candidates);
   return k ? (String(row[k]).trim() || def) : def;
@@ -155,7 +151,6 @@ function convertCode(raw) {
   var s = String(raw).trim().toUpperCase();
   var m = s.match(/^([A-Z])-(\d+)-(\d+)$/);
   if (!m) {
-    // 尝试旧格式 A-L1-P001
     if (/^[A-Z]-L\d+-P\d+$/.test(s)) return s;
     return null;
   }
@@ -165,29 +160,24 @@ function convertCode(raw) {
   return shelf + "-L" + layer + "-P" + String(pos).padStart(3, "0");
 }
 
-// ===== 从 Excel 行构建库位数据 =====
-function buildItem(row) {
-  var code = convertCode(getVal(row, KEY_CODE, ""));
-  if (!code) return null;
-  var qty = parseFloat(getVal(row, KEY_QTY, "0")) || 0;
-  var name = getVal(row, KEY_NAME, "");
-  return {
-    code: code,
-    itemno: getVal(row, KEY_ITEMNO, ""),
-    name: name,
-    spec: getVal(row, KEY_SPEC, ""),
-    qty: qty,
-    img: getVal(row, KEY_IMG, ""),
-    note: getVal(row, KEY_NOTE, ""),
-    // 原始行，保留所有未识别字段
-    _raw: row,
-    // 从库位编码提取货架和层
-    shelf: code.split("-")[0],
-    layer: parseInt(code.split("-L")[1].split("-")[0])
-  };
+// ===== 渲染货位色块的状态 =====
+// 返回 { cls, tip, isMulti }
+function getSlotStatus(loc) {
+  var items = loc.items;
+  if (items.length === 0) return { cls: "ms-empty", tip: "空库位", color: "#334" };
+  if (items.length > 1) {
+    var totalQty = items.reduce(function(s, it) { return s + (it.qty || 0); }, 0);
+    var hasCrit = items.some(function(it) { return it.qty > 0 && it.qty <= 10; });
+    return { cls: "ms-multi", tip: "共" + items.length + "种物料", color: "#9b59b6" };
+  }
+  var it = items[0];
+  if (!it.name || it.qty === 0) return { cls: "ms-empty", tip: "空库位", color: "#334" };
+  if (it.qty <= 10) return { cls: "ms-crit", tip: it.name + " x" + it.qty, color: "#e74c3c" };
+  if (it.qty <= 50) return { cls: "ms-low", tip: it.name + " x" + it.qty, color: "#f4d03f" };
+  return { cls: "ms-occ", tip: it.name + " x" + it.qty, color: "#4cc9f0" };
 }
 
-// ===== 加载 Excel 文件 =====
+// ===== 加载 Excel =====
 function loadExcel(file) {
   document.getElementById("fileName").textContent = file.name;
   var reader = new FileReader();
@@ -203,25 +193,55 @@ function loadExcel(file) {
         return;
       }
 
-      // 构建数据
-      RAW_DATA = json;
+      // 按库位编码分组
       DATA = {};
       var shelves = new Set();
 
       for (var i = 0; i < json.length; i++) {
-        var item = buildItem(json[i]);
-        if (item) {
-          DATA[item.code] = item;
-          shelves.add(item.shelf);
+        var row = json[i];
+        var code = convertCode(getVal(row, KEY_CODE, ""));
+        if (!code) continue;
+
+        var qty = parseFloat(getVal(row, KEY_QTY, "0")) || 0;
+        var name = getVal(row, KEY_NAME, "");
+        var itemno = getVal(row, KEY_ITEMNO, "");
+        var spec = getVal(row, KEY_SPEC, "");
+        var img = getVal(row, KEY_IMG, "");
+        var note = getVal(row, KEY_NOTE, "");
+
+        var item = {
+          itemno: itemno,
+          name: name,
+          spec: spec,
+          qty: qty,
+          img: img,
+          note: note,
+          _raw: row
+        };
+
+        if (!DATA[code]) {
+          var parts = code.split("-");
+          DATA[code] = {
+            code: code,
+            shelf: parts[0],
+            layer: parseInt(parts[1].replace("L", "")),
+            pos: parseInt(parts[2].replace("P", "")),
+            items: []
+          };
         }
+        DATA[code].items.push(item);
+
+        shelves.add(DATA[code].shelf);
       }
 
       var shelfList = Array.from(shelves).sort();
-      console.log("解析完成：", Object.keys(DATA).length, "条, 货架:", shelfList);
+      var totalSlots = Object.keys(DATA).length;
+      var totalItems = json.length;
+      console.log("解析完成：", totalSlots, "个货位,", totalItems, "条物料记录, 货架:", shelfList);
 
       renderBoard(shelfList);
       updateStats();
-      showToast("✅ 加载成功，共 " + Object.keys(DATA).length + " 条数据 (" + file.name + ")");
+      showToast("✅ 加载成功 " + totalSlots + " 货位/" + totalItems + " 物料 (" + file.name + ")");
     } catch(err) {
       showToast("❌ 解析失败：" + err.message);
       console.error(err);
@@ -230,7 +250,7 @@ function loadExcel(file) {
   reader.readAsArrayBuffer(file);
 }
 
-// ===== 渲染货架面板 =====
+// ===== 渲染货架 =====
 function renderBoard(shelfList) {
   var board = document.getElementById("board");
   var empty = document.getElementById("emptyBoard");
@@ -238,23 +258,20 @@ function renderBoard(shelfList) {
   if (empty) empty.style.display = "none";
   tip.style.display = "block";
 
-  // 清除旧货架
   var oldShelves = board.querySelectorAll(".shelf");
   for (var s = 0; s < oldShelves.length; s++) oldShelves[s].remove();
 
   for (var si = 0; si < shelfList.length; si++) {
     var shelf = shelfList[si];
-    var shelfDiv = document.createElement("div");
-    shelfDiv.className = "shelf";
-    shelfDiv.id = "shelf-" + shelf;
-    shelfDiv.onclick = (function(s) { return function() { showLayers(s); }; })(shelf);
-
-    // 计算层数范围
     var maxLayer = 1;
     for (var k in DATA) {
       if (DATA[k].shelf === shelf && DATA[k].layer > maxLayer) maxLayer = DATA[k].layer;
     }
 
+    var shelfDiv = document.createElement("div");
+    shelfDiv.className = "shelf";
+    shelfDiv.id = "shelf-" + shelf;
+    shelfDiv.onclick = (function(s) { return function() { showLayers(s); }; })(shelf);
     shelfDiv.innerHTML =
       '<div class="shelf-title">&#9670; ' + shelf + ' 区货架</div>' +
       '<div class="shelf-sub">' + maxLayer + '层</div>' +
@@ -263,13 +280,12 @@ function renderBoard(shelfList) {
     board.appendChild(shelfDiv);
   }
 
-  // 渲染每个货架的层预览
   for (var si = 0; si < shelfList.length; si++) {
     renderPreview(shelfList[si]);
   }
 }
 
-// ===== 渲染层预览色块 =====
+// ===== 渲染层预览 =====
 function renderPreview(shelf) {
   var el = document.getElementById("shelf-" + shelf + "-preview");
   if (!el) return;
@@ -281,39 +297,41 @@ function renderPreview(shelf) {
   }
 
   for (var l = 1; l <= maxLayer; l++) {
-    var its = getLayerItems(shelf, l);
-    var st = calcStats(its);
+    var layerItems = getLayerSlots(shelf, l);
+    var hasMulti = layerItems.some(function(loc) { return loc.items.length > 1; });
+    var st = calcStatsForLayer(layerItems);
     var cls = st.crit > 0 ? "ms-crit" : st.low > 0 ? "ms-low" : st.occ > 0 ? "ms-occ" : "ms-empty";
+    if (hasMulti) cls = "ms-multi";
+
     var dot = document.createElement("div");
     dot.className = "mini-slot " + cls;
     dot.textContent = "L" + l;
-    dot.title = "第" + l + "层：" + st.occ + "/" + its.length + " 已占用";
+    dot.title = "第" + l + "层：" + st.occ + "/" + layerItems.length + " 已占用" + (hasMulti ? " (含多物料)" : "");
     el.appendChild(dot);
   }
 }
 
-// ===== 获取某货架某层的货位 =====
-function getLayerItems(shelf, layer) {
+// ===== 获取某货架某层所有货位 =====
+function getLayerSlots(shelf, layer) {
   var result = [];
   for (var k in DATA) {
     if (DATA[k].shelf === shelf && DATA[k].layer === layer) result.push(DATA[k]);
   }
-  return result.sort(function(a, b) {
-    var pa = parseInt(a.code.split("-P")[1]);
-    var pb = parseInt(b.code.split("-P")[1]);
-    return pa - pb;
-  });
+  return result.sort(function(a, b) { return a.pos - b.pos; });
 }
 
-// ===== 计算层统计 =====
-function calcStats(items) {
+// ===== 计算某层统计 =====
+// items 这里传的是货位数组，不是物料数组
+function calcStatsForLayer(locations) {
   var occ = 0, crit = 0, low = 0;
-  for (var i = 0; i < items.length; i++) {
-    var q = items[i].qty || 0;
-    var n = items[i].name || "";
-    if (n && q > 0) occ++;
-    if (n && q > 0 && q <= 10) crit++;
-    if (n && q > 10 && q <= 50) low++;
+  for (var i = 0; i < locations.length; i++) {
+    var items = locations[i].items;
+    var hasOccupied = items.some(function(it) { return it.name && it.qty > 0; });
+    var hasCrit = items.some(function(it) { return it.qty > 0 && it.qty <= 10; });
+    var hasLow = items.some(function(it) { return it.qty > 10 && it.qty <= 50; });
+    if (hasOccupied) occ++;
+    if (hasCrit) crit++;
+    else if (hasLow) low++;
   }
   return { occ: occ, crit: crit, low: low };
 }
@@ -332,9 +350,9 @@ function showLayers(shelf) {
   }
 
   for (var L = 1; L <= maxLayer; L++) {
-    var its = getLayerItems(shelf, L);
-    if (its.length === 0) continue;
-    var st = calcStats(its);
+    var slots = getLayerSlots(shelf, L);
+    if (slots.length === 0) continue;
+    var st = calcStatsForLayer(slots);
 
     var card = document.createElement("div");
     card.className = "layer-card";
@@ -345,48 +363,51 @@ function showLayers(shelf) {
 
     var left = document.createElement("span");
     left.innerHTML = "<span style='font-size:10px;color:#4cc9f0;margin-right:6px'>▶</span>第 " + L + " 层";
-
     var countSpan = document.createElement("span");
     countSpan.style.cssText = "font-size:11px;color:#888";
-    countSpan.innerHTML = "<span style='color:#27ae60'>" + st.occ + "</span>/" + its.length +
+    countSpan.innerHTML = "<span style='color:#27ae60'>" + st.occ + "</span>/" + slots.length +
       (st.crit > 0 ? " <span style='color:#e74c3c'>⚠️" + st.crit + "</span>" : "") +
       (st.low > 0 ? " <span style='color:#f39c12'>⚡" + st.low + "</span>" : "");
-
     left.appendChild(countSpan);
     titleRow.appendChild(left);
 
     var arrow = document.createElement("span");
     arrow.textContent = "▶";
-    arrow.style.cssText = "font-size:10px;color:#4cc9f0;display:inline-block;transition:transform .2s";
+    arrow.style.cssText = "font-size:10px;color:#4cc9f0;transition:transform .2s";
     titleRow.appendChild(arrow);
-
     card.appendChild(titleRow);
 
     var grid = document.createElement("div");
     grid.style.cssText = "display:flex;flex-wrap:wrap;gap:5px";
 
-    for (var j = 0; j < its.length; j++) {
-      var item = its[j];
-      var q = item.qty || 0;
-      var n = item.name || "";
-      var empty = !n || q === 0;
-      var pnum = parseInt(item.code.split("-P")[1]);
-      var cls = empty ? "ms-empty" : q <= 10 ? "ms-crit" : q <= 50 ? "ms-low" : "ms-occ";
+    for (var j = 0; j < slots.length; j++) {
+      var loc = slots[j];
+      var status = getSlotStatus(loc);
+      var pnum = loc.pos;
 
       var dot = document.createElement("div");
-      dot.style.cssText = "width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;";
-      if (cls === "ms-empty") dot.style.cssText += "border-color:#1e2d3d;background:#111827;color:#334;";
-      else if (cls === "ms-crit") dot.style.cssText += "border-color:#e74c3c;background:#2a0000;color:#e74c3c;animation:pulse 1.5s infinite;";
-      else if (cls === "ms-low") dot.style.cssText += "border-color:#f4d03f;background:#2a2200;color:#f4d03f;";
-      else dot.style.cssText += "border-color:#4cc9f0;background:#0a2040;color:#4cc9f0;";
+      var baseCss = "width:26px;height:26px;border-radius:5px;border:1px solid " + status.color + ";background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;position:relative;color:" + status.color + ";";
+      if (status.cls === "ms-crit") baseCss += "animation:pulse 1.5s infinite;";
+      if (status.cls === "ms-multi") baseCss += "animation:pulse-multi 2s infinite;";
+      dot.style.cssText = baseCss;
       dot.textContent = (pnum < 10 ? "0" : "") + pnum;
-      dot.title = empty ? item.code + " 空" : item.code + " " + n + " x" + q;
-      dot.onclick = (function(it) {
+      dot.title = loc.code + " " + status.tip;
+      dot.onclick = (function(l) {
         return function(e) {
           e.stopPropagation();
-          showModal(it);
+          showModal(l);
         };
-      })(item);
+      })(loc);
+
+      // 多物料小圆点
+      if (loc.items.length > 1) {
+        var badge = document.createElement("div");
+        badge.className = "multi-badge";
+        badge.textContent = loc.items.length;
+        badge.style.cssText = "position:absolute;top:-4px;right:-4px;min-width:11px;height:11px;background:#9b59b6;color:#fff;border-radius:5px;font-size:6px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 1px;box-shadow:0 0 4px rgba(0,0,0,.5)";
+        dot.appendChild(badge);
+      }
+
       dot.onmouseover = function() { this.style.transform = "scale(1.15)"; };
       dot.onmouseout = function() { this.style.transform = "scale(1)"; };
       grid.appendChild(dot);
@@ -414,25 +435,103 @@ function showLayers(shelf) {
   }
 }
 
-// ===== 弹窗详情 =====
-function showModal(item) {
-  var q = item.qty || 0;
-  var n = item.name || "";
-  var empty = !n || q === 0;
+// ===== 弹窗详情（支持同库位多物料）=====
+function showModal(loc) {
+  var items = loc.items;
+  document.getElementById("modalTitle").textContent = "📦 " + loc.code;
+  var body = document.getElementById("modalBody");
+  body.innerHTML = "";
 
-  document.getElementById("modalTitle").textContent = "📦 " + item.code;
-  document.getElementById("m-code").textContent = item.code;
-  document.getElementById("m-itemno").textContent = item.itemno || "-";
-  document.getElementById("m-name").textContent = empty ? "(空库位)" : n;
-  document.getElementById("m-spec").textContent = item.spec || "-";
-  document.getElementById("m-qty").textContent = empty ? "-" : q + (item._raw && item._raw["单位"] ? " " + item._raw["单位"] : "");
-  document.getElementById("m-note").textContent = item.note || "无";
+  // 货位标题行
+  var locBar = document.createElement("div");
+  locBar.className = "modal-location";
+  locBar.textContent = "📍 " + loc.code;
+  if (items.length > 1) {
+    var countBadge = document.createElement("span");
+    countBadge.className = "modal-items-count";
+    countBadge.textContent = "共 " + items.length + " 种物料";
+    locBar.appendChild(countBadge);
+  }
+  body.appendChild(locBar);
 
-  var imgPath = item.img || "";
-  document.getElementById("modalImg").innerHTML = imgPath
-    ? "<img src='" + imgPath + "' />"
-    : "<div class='no-img'>暂无图片</div>";
-  
+  // 汇总行
+  if (items.length > 1) {
+    var totalQty = items.reduce(function(s, it) { return s + (it.qty || 0); }, 0);
+    var avgQty = Math.round(totalQty / items.length);
+    var sumRow = document.createElement("div");
+    sumRow.style.cssText = "font-size:12px;color:#888;text-align:center;padding:4px 0";
+    sumRow.textContent = "合计 " + items.length + " 种物料，总库存 " + totalQty + "（均 " + avgQty + "）";
+    body.appendChild(sumRow);
+  }
+
+  // 每个物料一条卡片
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    var q = it.qty || 0;
+    var n = it.name || "";
+    var empty = !n || q === 0;
+
+    var card = document.createElement("div");
+    card.className = "modal-item-card";
+
+    // 头部：名称 + 数量
+    var header = document.createElement("div");
+    header.className = "modal-item-header";
+
+    var nameEl = document.createElement("div");
+    nameEl.className = "modal-item-name";
+    nameEl.textContent = (items.length > 1 ? (i + 1) + ". " : "") + (empty ? "(空)" : n);
+
+    var qtyEl = document.createElement("div");
+    qtyEl.className = "modal-item-qty";
+    if (empty) qtyEl.className += " empty";
+    else if (q <= 10) qtyEl.className += " crit";
+    else if (q <= 50) qtyEl.className += " low";
+    else qtyEl.className += " ok";
+    qtyEl.textContent = empty ? "空" : q;
+
+    header.appendChild(nameEl);
+    header.appendChild(qtyEl);
+
+    // 明细行
+    var detailRow = document.createElement("div");
+    detailRow.className = "modal-item-row";
+    var unit = it._raw && it._raw["单位"] ? it._raw["单位"] : "";
+    var detailHtml = 
+      (it.itemno ? "料号: <span>" + it.itemno + "</span>" : "") +
+      (it.spec ? " &nbsp;规格: <span>" + it.spec + "</span>" : "") +
+      (unit ? " &nbsp;单位: <span>" + unit + "</span>" : "");
+    detailRow.innerHTML = detailHtml || "<span style='color:#333'>—</span>";
+
+    // 备注行
+    if (it.note) {
+      var noteRow = document.createElement("div");
+      noteRow.style.cssText = "font-size:11px;color:#f39c12;margin-top:4px;padding:3px 6px;background:rgba(243,156,18,0.1);border-radius:4px;display:inline-block";
+      noteRow.textContent = "📝 " + it.note;
+      card.appendChild(noteRow);
+    }
+
+    card.appendChild(header);
+    card.appendChild(detailRow);
+    body.appendChild(card);
+  }
+
+  // 图片（如果有的话，取第一个有图片的物料）
+  var imgItem = items.find(function(it) { return it.img && it.img !== ""; });
+  if (imgItem) {
+    var div = document.createElement("div");
+    div.className = "modal-img";
+    div.style.cssText = "width:100%;height:120px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0";
+    div.innerHTML = "<img src='" + imgItem.img + "' style='max-width:100%;max-height:110px;object-fit:contain' />";
+    body.insertBefore(div, body.firstChild);
+  } else {
+    var div = document.createElement("div");
+    div.className = "modal-img";
+    div.style.cssText = "width:100%;height:120px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0";
+    div.innerHTML = "<div style='color:#2a3a5a;font-size:13px'>暂无图片</div>";
+    body.insertBefore(div, body.firstChild);
+  }
+
   document.getElementById("modalOverlay").classList.add("show");
 }
 
@@ -442,18 +541,33 @@ function closeModal(e) {
 }
 
 // ===== 更新统计 =====
+// 统计对象：
+//   货位：至少有1个物料且有库存
+//   物料总数：有库存的物料行数
+//   告警：库存<=50的物料行数
 function updateStats() {
-  var all = Object.keys(DATA).map(function(k) { return DATA[k]; });
-  var occ = 0, alert = 0;
-  for (var i = 0; i < all.length; i++) {
-    var q = all[i].qty || 0;
-    var n = all[i].name || "";
-    if (n && q > 0) occ++;
-    if (n && q > 0 && q <= 50) alert++;
+  var allLocs = Object.keys(DATA).map(function(k) { return DATA[k]; });
+  var occupiedLocs = 0;
+  var totalItems = 0;
+  var alertItems = 0;
+  var multiLocs = 0;
+
+  for (var i = 0; i < allLocs.length; i++) {
+    var items = allLocs[i].items;
+    if (items.length > 1) multiLocs++;
+    var hasOccupied = items.some(function(it) { return it.name && it.qty > 0; });
+    if (hasOccupied) occupiedLocs++;
+    for (var j = 0; j < items.length; j++) {
+      var it = items[j];
+      if (it.name && it.qty > 0) {
+        totalItems++;
+        if (it.qty <= 50) alertItems++;
+      }
+    }
   }
-  document.getElementById("s-total").textContent = all.length;
-  document.getElementById("s-occ").textContent = occ;
-  document.getElementById("s-alert").textContent = alert;
+  document.getElementById("s-total").textContent = allLocs.length;
+  document.getElementById("s-occ").textContent = occupiedLocs + "/" + totalItems + " (多物料:" + multiLocs + ")";
+  document.getElementById("s-alert").textContent = alertItems;
 }
 
 // ===== Toast 提示 =====
@@ -461,7 +575,7 @@ function showToast(msg) {
   var t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.add("show");
-  setTimeout(function() { t.classList.remove("show"); }, 3000);
+  setTimeout(function() { t.classList.remove("show"); }, 3500);
 }
 
 // ===== 事件绑定 =====
@@ -474,75 +588,88 @@ document.addEventListener("keydown", function(e) {
   if (e.key === "Escape") closeModal();
 });
 
-// ===== 自动检测本地 Excel 文件 =====
-(function autoLoadLocalExcel() {
+// ===== 自动检测本地 data.xlsx / data.json =====
+// （同上版本，保留兼容性）
+(function autoLoad() {
+  // 优先尝试 xlsx
   var xhr = new XMLHttpRequest();
   xhr.open("GET", "data.xlsx?t=" + Date.now(), true);
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4 && xhr.status === 200) {
+  xhr.onerror = function() {
+    // 降级尝试 json
+    var xhr2 = new XMLHttpRequest();
+    xhr2.open("GET", "data.json?t=" + Date.now(), true);
+    xhr2.onreadystatechange = function() {
+      if (xhr2.readyState === 4 && xhr2.status === 200) {
+        try {
+          var json = JSON.parse(xhr2.responseText);
+          DATA = {};
+          var shelves = new Set();
+          for (var i = 0; i < json.length; i++) {
+            var row = json[i];
+            var code = row["库位编码"] || row["库位"] || row["code"] || "";
+            if (!code) continue;
+            var qty = parseFloat(row["数量"] || row["可用量"] || "0") || 0;
+            var name = row["物料名称"] || row["品名"] || "";
+            var itemno = row["料号"] || "";
+            var spec = row["规格型号"] || row["规格"] || "";
+            var img = row["物料图片路径"] || "";
+            var note = row["备注"] || "";
+            var unit = row["单位"] || "";
+            var parts = code.split("-");
+            var shelf = parts[0] || "";
+            var layer = parts[1] ? parseInt(parts[1].replace("L", "")) : 1;
+            var pos = parts[2] ? parseInt(parts[2].replace("P", "")) : 1;
+            if (!DATA[code]) {
+              DATA[code] = { code: code, shelf: shelf, layer: layer, pos: pos, items: [] };
+              shelves.add(shelf);
+            }
+            DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, img: img, note: note, _raw: { "单位": unit } });
+          }
+          var shelfList = Array.from(shelves).sort();
+          document.getElementById("fileName").textContent = "data.json (已自动加载)";
+          renderBoard(shelfList);
+          updateStats();
+          showToast("✅ 自动加载 data.json，共 " + Object.keys(DATA).length + " 货位");
+        } catch(e) { console.log("json 解析失败:", e.message); }
+      }
+    };
+    xhr2.send();
+  };
+  xhr.onload = function() {
+    if (xhr.status === 200) {
       try {
-        var data = new Uint8Array(xhr.response);
-        var workbook = XLSX.read(data, {type: "array"});
-        var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        var json = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
-        RAW_DATA = json;
+        var workbook = XLSX.read(new Uint8Array(xhr.response), {type: "array"});
+        var json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""});
         DATA = {};
         var shelves = new Set();
         for (var i = 0; i < json.length; i++) {
-          var item = buildItem(json[i]);
-          if (item) {
-            DATA[item.code] = item;
-            shelves.add(item.shelf);
+          var row = json[i];
+          var code = convertCode(getVal(row, KEY_CODE, ""));
+          if (!code) continue;
+          var item = {
+            itemno: getVal(row, KEY_ITEMNO, ""),
+            name: getVal(row, KEY_NAME, ""),
+            spec: getVal(row, KEY_SPEC, ""),
+            qty: parseFloat(getVal(row, KEY_QTY, "0")) || 0,
+            img: getVal(row, KEY_IMG, ""),
+            note: getVal(row, KEY_NOTE, ""),
+            _raw: row
+          };
+          if (!DATA[code]) {
+            var parts = code.split("-");
+            DATA[code] = { code: code, shelf: parts[0], layer: parseInt(parts[1].replace("L","")), pos: parseInt(parts[2].replace("P","")), items: [] };
+            shelves.add(parts[0]);
           }
+          DATA[code].items.push(item);
         }
         var shelfList = Array.from(shelves).sort();
         document.getElementById("fileName").textContent = "data.xlsx (已自动加载)";
         renderBoard(shelfList);
         updateStats();
-        showToast("✅ 自动加载 data.xlsx，共 " + Object.keys(DATA).length + " 条");
-      } catch(e) {
-        console.log("自动加载 xlsx 失败，尝试加载 data.json:", e.message);
-        // 降级尝试 data.json（兼容旧版）
-        var xhr2 = new XMLHttpRequest();
-        xhr2.open("GET", "data.json?t=" + Date.now(), true);
-        xhr2.onreadystatechange = function() {
-          if (xhr2.readyState === 4 && xhr2.status === 200) {
-            try {
-              var json = JSON.parse(xhr2.responseText);
-              DATA = {};
-              for (var i = 0; i < json.length; i++) {
-                var item = {
-                  code: json[i]["库位编码"] || json[i]["库位"] || json[i]["code"] || "",
-                  itemno: json[i]["料号"] || json[i]["itemno"] || "",
-                  name: json[i]["物料名称"] || json[i]["品名"] || "",
-                  spec: json[i]["规格型号"] || json[i]["规格"] || "",
-                  qty: parseFloat(json[i]["数量"] || json[i]["可用量"] || "0") || 0,
-                  img: json[i]["物料图片路径"] || "",
-                  note: json[i]["备注"] || "",
-                  shelf: "",
-                  layer: 0
-                };
-                if (!item.code) continue;
-                var parts = item.code.split("-");
-                item.shelf = parts[0] || "";
-                var layerPart = item.code.match(/-L(\d+)-/);
-                item.layer = layerPart ? parseInt(layerPart[1]) : 0;
-                DATA[item.code] = item;
-              }
-              var shelves = new Set();
-              for (var k in DATA) shelves.add(DATA[k].shelf);
-              var shelfList = Array.from(shelves).sort();
-              document.getElementById("fileName").textContent = "data.json (已自动加载)";
-              renderBoard(shelfList);
-              updateStats();
-              showToast("✅ 自动加载 data.json，共 " + Object.keys(DATA).length + " 条");
-            } catch(e2) {
-              console.log("自动加载 data.json 失败:", e2.message);
-            }
-          }
-        };
-        xhr2.send();
-      }
+        showToast("✅ 自动加载 data.xlsx，共 " + Object.keys(DATA).length + " 货位");
+      } catch(e) { console.log("xlsx 解析失败:", e.message); }
+    } else {
+      xhr.onerror();
     }
   };
   xhr.send();

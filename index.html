@@ -4,17 +4,23 @@
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>仓库库位看板</title>
+ <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
  <style>
  *{margin:0;padding:0;box-sizing:border-box}
  body{background:#0a0e1a;font-family:Microsoft YaHei,PingFang SC,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
  header{background:#0d1525;border-bottom:2px solid #1a3a5c;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
  h1{font-size:18px;color:#4cc9f0;font-weight:900}
+ .header-left{display:flex;align-items:center;gap:16px}
+ .file-btn{display:flex;align-items:center;gap:8px;background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;transition:all .2s}
+ .file-btn:hover{background:#0a2040;box-shadow:0 0 12px rgba(76,201,240,.3)}
+ .file-btn input[type="file"]{display:none}
+ .file-name{color:#888;font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  .stats{display:flex;gap:20px;font-size:13px;color:#666}
  .stats span{color:#4cc9f0;font-weight:bold}
  .btn{background:#e94560;color:#fff;border:none;padding:7px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold}
  .btn:hover{background:#ff6b8a}
  .main{flex:1;display:flex;overflow:hidden}
- .board{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:12px;overflow:auto}
+ .board{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;gap:12px;overflow:auto}
  .shelf{background:linear-gradient(180deg,#0d1f38,#0a1830);border:2px solid #4cc9f0;border-radius:12px;padding:16px 20px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:300px}
  .shelf:hover{border-color:#e94560;background:linear-gradient(180deg,#1a0a28,#150a20);transform:scale(1.02);box-shadow:0 8px 24px rgba(233,69,96,.2)}
  .shelf-title{font-size:20px;font-weight:900;color:#4cc9f0;letter-spacing:2px}
@@ -36,8 +42,6 @@
  .layer-card:hover{border-color:#4cc9f0;background:#0a2040}
  .layer-card-title{font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
  .layer-card-count{font-size:11px;color:#888}
- .layer-card-count .warn{color:#f39c12}
- .layer-card-count .crit{color:#e74c3c}
  .pos-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
  .pos-dot{width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s}
  .pos-dot:hover{transform:scale(1.15)}
@@ -49,7 +53,7 @@
  .modal-close{background:none;border:none;color:#888;font-size:22px;cursor:pointer}
  .modal-close:hover{color:#e94560}
  .modal-body{padding:18px;display:flex;flex-direction:column;gap:12px}
- .modal-img{width:100%;height:140px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;align-items:center;justify-content:center}
+ .modal-img{width:100%;height:140px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden}
  .modal-img img{max-width:100%;max-height:130px;object-fit:contain}
  .modal-img .no-img{color:#2a3a5a;font-size:13px}
  .modal-row{display:flex;gap:12px}
@@ -65,288 +69,484 @@
  .modal-divider{height:1px;background:#0f3460}
  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0d1f38;border:2px solid #4cc9f0;color:#4cc9f0;padding:8px 22px;border-radius:10px;font-size:13px;opacity:0;transition:all .35s;pointer-events:none;z-index:9999}
  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
- .tip{text-align:center;font-size:11px;color:#2a3a5a;padding:8px}
+ .tip{text-align:center;font-size:11px;color:#2a3a5a;padding:8px;width:100%}
+ .empty-board{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#2a3a5a;font-size:14px;text-align:center}
+ .empty-board-icon{font-size:64px;opacity:.3}
+ .data-info{color:#4cc9f0;font-size:12px;background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 16px;margin-top:4px}
  </style>
 </head>
 <body>
 <header>
- <h1>&#128230; 仓库库位看板</h1>
+ <div class="header-left">
+   <h1>📦 仓库库位看板</h1>
+   <label class="file-btn" id="fileBtn">
+    📂 选择Excel文件
+    <input type="file" accept=".xlsx,.xls" id="fileInput" />
+   </label>
+   <span class="file-name" id="fileName"></span>
+ </div>
  <div class="stats">总库位 <span id="s-total">0</span> · 已占用 <span id="s-occ" style="color:#27ae60">0</span> · 告警 <span id="s-alert" style="color:#e74c3c">0</span></div>
- <button class="btn" onclick="loadData()">&#128260; 刷新数据</button>
+ <button class="btn" onclick="document.getElementById('fileInput').click()">🔄 重新加载</button>
 </header>
 <div class="main">
  <div class="board" id="board">
- <div class="tip">&#128070; 点击货架 → 选择层数 → 点击货位查看详情</div>
- <div class="shelf" id="shelf-a" onclick="showLayers('A')">
- <div class="shelf-title">&#9670; A 区货架</div>
- <div class="shelf-sub">4层 · 每层6个货位</div>
- <div class="shelf-layers">点击进入</div>
- <div class="layer-row" id="shelf-a-preview"></div>
- </div>
+   <div class="empty-board" id="emptyBoard">
+     <div class="empty-board-icon">📂</div>
+     <div>请选择 Excel 数据源文件</div>
+     <div class="data-info">支持 .xlsx / .xls 格式<br>表头需包含：料号、库位、品名、规格、可用量</div>
+   </div>
+   <div class="tip" id="boardTip" style="display:none">👆 点击货架 → 选择层数 → 点击货位查看详情</div>
  </div>
  <div class="panel">
- <div class="panel-title" id="panelTitle">&#128203; 库位详情</div>
- <div class="panel-hint" id="panelHint"><div class="panel-hint-icon">&#128070;</div><div>点击左侧货架<br>查看层数和货位</div></div>
- <div class="layer-list" id="layerList"></div>
+   <div class="panel-title" id="panelTitle">📃 库位详情</div>
+   <div class="panel-hint" id="panelHint"><div class="panel-hint-icon">👆</div><div>点击左侧货架<br>查看层数和货位</div></div>
+   <div class="layer-list" id="layerList"></div>
  </div>
 </div>
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
  <div class="modal" onclick="event.stopPropagation()">
- <div class="modal-header">
- <h2 id="modalTitle">&#128230; 货位详情</h2>
- <button class="modal-close" onclick="closeModal()">×</button>
- </div>
- <div class="modal-body">
- <div class="modal-img" id="modalImg"><div class="no-img">暂无图片</div></div>
- <div class="modal-row"><div class="modal-label">库位</div><div class="modal-value highlight" id="m-code">-</div></div>
- <div class="modal-row"><div class="modal-label">物料</div><div class="modal-value" id="m-name">-</div></div>
- <div class="modal-row"><div class="modal-label">规格</div><div class="modal-value" id="m-spec">-</div></div>
- <div class="modal-row"><div class="modal-label">数量</div><div class="modal-value" id="m-qty">-</div></div>
- <div class="modal-row"><div class="modal-label">状态</div><div class="modal-value"><span class="modal-badge" id="m-badge">-</span></div></div>
- <div class="modal-divider"></div>
- <div class="modal-row"><div class="modal-label">备注</div><div class="modal-value" id="m-note" style="font-size:12px;color:#6a8aaa">-</div></div>
- </div>
+   <div class="modal-header">
+     <h2 id="modalTitle">📦 货位详情</h2>
+     <button class="modal-close" onclick="closeModal()">×</button>
+   </div>
+   <div class="modal-body">
+     <div class="modal-img" id="modalImg"><div class="no-img">暂无图片</div></div>
+     <div class="modal-row"><div class="modal-label">库位</div><div class="modal-value highlight" id="m-code">-</div></div>
+     <div class="modal-row"><div class="modal-label">料号</div><div class="modal-value" id="m-itemno">-</div></div>
+     <div class="modal-row"><div class="modal-label">品名</div><div class="modal-value" id="m-name">-</div></div>
+     <div class="modal-row"><div class="modal-label">规格</div><div class="modal-value" id="m-spec">-</div></div>
+     <div class="modal-row"><div class="modal-label">可用量</div><div class="modal-value" id="m-qty">-</div></div>
+     <div class="modal-divider"></div>
+     <div class="modal-row"><div class="modal-label">备注</div><div class="modal-value" id="m-note" style="font-size:12px;color:#6a8aaa">-</div></div>
+   </div>
  </div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
-var K_CODE = "库位编码";
-var K_NAME = "物料名称";
-var K_QTY = "数量";
-var K_SPEC = "规格型号";
-var K_UNIT = "单位";
-var K_IMG = "物料图片路径";
-var K_NOTE = "备注";
+// ===== Excel 数据键名（兼容多种命名方式）=====
+var KEY_CODE = ["库位", "库位编码", "货位", "库位编号", "位置"];
+var KEY_ITEMNO = ["料号", "物料编号", "编码", "SKU", "商品编号"];
+var KEY_NAME = ["品名", "物料名称", "名称", "名称", "商品名称"];
+var KEY_SPEC = ["规格", "规格型号", "型号", "规格型号"];
+var KEY_QTY = ["可用量", "库存量", "数量", "可用库存", "当前库存"];
+var KEY_IMG = ["图片", "物料图片", "图片路径", "照片", "图片URL"];
+var KEY_NOTE = ["备注", "备注信息", "说明", "备注说明"];
 
-var DATA = {};
+// ===== 全局数据 =====
+var RAW_DATA = [];   // 原始行数据
+var DATA = {};       // 按库位编码索引
 
-function loadData() {
- var xhr = new XMLHttpRequest();
- xhr.open("GET", "data.json?t=" + Date.now(), true);
- xhr.onreadystatechange = function() {
- if (xhr.readyState === 4) {
- if (xhr.status === 200) {
- try {
- var json = JSON.parse(xhr.responseText);
- DATA = {};
- for (var i = 0; i < json.length; i++) {
- DATA[json[i][K_CODE]] = json[i];
- }
- updateStats();
- renderPreviews();
- showToast("\u2705 \u52A0\u8F7D\u5B8C\u6210\uFF0C\u5171 " + json.length + " \u6761");
- } catch(e) {
- showToast("\u274C JSON\u89E3\u6790\u9519\u8BEF\uFF1A" + e.message);
- }
- } else {
- showToast("\u274C \u52A0\u8F7D\u5931\u8D25\uFF1A" + xhr.status);
- }
- }
- };
- xhr.send();
+// ===== 通用字段查找 =====
+function findKey(row, candidates) {
+  for (var k of candidates) {
+    if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== "") return k;
+  }
+  return null;
 }
 
+function getVal(row, candidates, def) {
+  var k = findKey(row, candidates);
+  return k ? (String(row[k]).trim() || def) : def;
+}
+
+// ===== 库位编码转换：A-2-1 → A-L2-P001 =====
+function convertCode(raw) {
+  if (!raw) return null;
+  var s = String(raw).trim().toUpperCase();
+  var m = s.match(/^([A-Z])-(\d+)-(\d+)$/);
+  if (!m) {
+    // 尝试旧格式 A-L1-P001
+    if (/^[A-Z]-L\d+-P\d+$/.test(s)) return s;
+    return null;
+  }
+  var shelf = m[1];
+  var layer = parseInt(m[2]);
+  var pos = parseInt(m[3]);
+  return shelf + "-L" + layer + "-P" + String(pos).padStart(3, "0");
+}
+
+// ===== 从 Excel 行构建库位数据 =====
+function buildItem(row) {
+  var code = convertCode(getVal(row, KEY_CODE, ""));
+  if (!code) return null;
+  var qty = parseFloat(getVal(row, KEY_QTY, "0")) || 0;
+  var name = getVal(row, KEY_NAME, "");
+  return {
+    code: code,
+    itemno: getVal(row, KEY_ITEMNO, ""),
+    name: name,
+    spec: getVal(row, KEY_SPEC, ""),
+    qty: qty,
+    img: getVal(row, KEY_IMG, ""),
+    note: getVal(row, KEY_NOTE, ""),
+    // 原始行，保留所有未识别字段
+    _raw: row,
+    // 从库位编码提取货架和层
+    shelf: code.split("-")[0],
+    layer: parseInt(code.split("-L")[1].split("-")[0])
+  };
+}
+
+// ===== 加载 Excel 文件 =====
+function loadExcel(file) {
+  document.getElementById("fileName").textContent = file.name;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      var workbook = XLSX.read(data, {type: "array", cellDates: true});
+      var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      var json = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
+      
+      if (json.length === 0) {
+        showToast("⚠️ Excel 文件为空");
+        return;
+      }
+
+      // 构建数据
+      RAW_DATA = json;
+      DATA = {};
+      var shelves = new Set();
+
+      for (var i = 0; i < json.length; i++) {
+        var item = buildItem(json[i]);
+        if (item) {
+          DATA[item.code] = item;
+          shelves.add(item.shelf);
+        }
+      }
+
+      var shelfList = Array.from(shelves).sort();
+      console.log("解析完成：", Object.keys(DATA).length, "条, 货架:", shelfList);
+
+      renderBoard(shelfList);
+      updateStats();
+      showToast("✅ 加载成功，共 " + Object.keys(DATA).length + " 条数据 (" + file.name + ")");
+    } catch(err) {
+      showToast("❌ 解析失败：" + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ===== 渲染货架面板 =====
+function renderBoard(shelfList) {
+  var board = document.getElementById("board");
+  var empty = document.getElementById("emptyBoard");
+  var tip = document.getElementById("boardTip");
+  if (empty) empty.style.display = "none";
+  tip.style.display = "block";
+
+  // 清除旧货架
+  var oldShelves = board.querySelectorAll(".shelf");
+  for (var s = 0; s < oldShelves.length; s++) oldShelves[s].remove();
+
+  for (var si = 0; si < shelfList.length; si++) {
+    var shelf = shelfList[si];
+    var shelfDiv = document.createElement("div");
+    shelfDiv.className = "shelf";
+    shelfDiv.id = "shelf-" + shelf;
+    shelfDiv.onclick = (function(s) { return function() { showLayers(s); }; })(shelf);
+
+    // 计算层数范围
+    var maxLayer = 1;
+    for (var k in DATA) {
+      if (DATA[k].shelf === shelf && DATA[k].layer > maxLayer) maxLayer = DATA[k].layer;
+    }
+
+    shelfDiv.innerHTML =
+      '<div class="shelf-title">&#9670; ' + shelf + ' 区货架</div>' +
+      '<div class="shelf-sub">' + maxLayer + '层</div>' +
+      '<div class="shelf-layers">点击进入</div>' +
+      '<div class="layer-row" id="shelf-' + shelf + '-preview"></div>';
+    board.appendChild(shelfDiv);
+  }
+
+  // 渲染每个货架的层预览
+  for (var si = 0; si < shelfList.length; si++) {
+    renderPreview(shelfList[si]);
+  }
+}
+
+// ===== 渲染层预览色块 =====
+function renderPreview(shelf) {
+  var el = document.getElementById("shelf-" + shelf + "-preview");
+  if (!el) return;
+  el.innerHTML = "";
+
+  var maxLayer = 1;
+  for (var k in DATA) {
+    if (DATA[k].shelf === shelf && DATA[k].layer > maxLayer) maxLayer = DATA[k].layer;
+  }
+
+  for (var l = 1; l <= maxLayer; l++) {
+    var its = getLayerItems(shelf, l);
+    var st = calcStats(its);
+    var cls = st.crit > 0 ? "ms-crit" : st.low > 0 ? "ms-low" : st.occ > 0 ? "ms-occ" : "ms-empty";
+    var dot = document.createElement("div");
+    dot.className = "mini-slot " + cls;
+    dot.textContent = "L" + l;
+    dot.title = "第" + l + "层：" + st.occ + "/" + its.length + " 已占用";
+    el.appendChild(dot);
+  }
+}
+
+// ===== 获取某货架某层的货位 =====
 function getLayerItems(shelf, layer) {
- var prefix = shelf + "-L" + layer + "-";
- var result = [];
- for (var k in DATA) {
- if (k.indexOf(prefix) === 0) result.push(DATA[k]);
- }
- return result;
+  var result = [];
+  for (var k in DATA) {
+    if (DATA[k].shelf === shelf && DATA[k].layer === layer) result.push(DATA[k]);
+  }
+  return result.sort(function(a, b) {
+    var pa = parseInt(a.code.split("-P")[1]);
+    var pb = parseInt(b.code.split("-P")[1]);
+    return pa - pb;
+  });
 }
 
+// ===== 计算层统计 =====
 function calcStats(items) {
- var occ = 0, crit = 0, low = 0;
- for (var i = 0; i < items.length; i++) {
- var q = parseFloat(items[i][K_QTY]) || 0;
- var n = items[i][K_NAME] || "";
- if (n && q > 0) occ++;
- if (n && q > 0 && q <= 10) crit++;
- if (n && q > 10 && q <= 50) low++;
- }
- return { occ: occ, crit: crit, low: low };
+  var occ = 0, crit = 0, low = 0;
+  for (var i = 0; i < items.length; i++) {
+    var q = items[i].qty || 0;
+    var n = items[i].name || "";
+    if (n && q > 0) occ++;
+    if (n && q > 0 && q <= 10) crit++;
+    if (n && q > 10 && q <= 50) low++;
+  }
+  return { occ: occ, crit: crit, low: low };
 }
 
-function renderPreviews() {
- var shelves = ["A"];
- for (var s = 0; s < shelves.length; s++) {
- var shelf = shelves[s];
- var el = document.getElementById("shelf-" + shelf.toLowerCase() + "-preview");
- if (!el) continue;
- el.innerHTML = "";
- for (var l = 1; l <= 4; l++) {
- var layerItems = getLayerItems(shelf, l);
- var stats = calcStats(layerItems);
- var cls = stats.crit > 0 ? "ms-crit" : stats.low > 0 ? "ms-low" : stats.occ > 0 ? "ms-occ" : "ms-empty";
- var dot = document.createElement("div");
- dot.className = "mini-slot " + cls;
- dot.textContent = "L" + l;
- dot.title = "\u7B2C" + l + "\u5C42\uFF1A" + stats.occ + "/" + layerItems.length + " \u5DF2\u5360\u7528";
- el.appendChild(dot);
- }
- }
-}
-
+// ===== 右侧层列表 =====
 function showLayers(shelf) {
- if (Object.keys(DATA).length === 0) { showToast("\u26A0\uFE0F \u8BF7\u7B49\u5F85\u6570\u636E\u52A0\u8F7D\u5B8C\u6210"); return; }
- console.log("showLayers called, shelf:", shelf, "DATA keys count:", Object.keys(DATA).length);
- document.getElementById("panelHint").style.display = "none";
- var list = document.getElementById("layerList");
- list.innerHTML = "";
- document.getElementById("panelTitle").textContent = "\uD83D\uDCCB " + shelf + " \u533A\u8D27\u67DC \u00B7 \u9009\u62E9\u5C42\u6570";
+  if (Object.keys(DATA).length === 0) { showToast("⚠️ 请先加载 Excel 数据"); return; }
+  document.getElementById("panelHint").style.display = "none";
+  var list = document.getElementById("layerList");
+  list.innerHTML = "";
+  document.getElementById("panelTitle").textContent = "📋 " + shelf + " 区货架 · 选择层数";
 
- for (var L = 1; L <= 4; L++) {
- var its = getLayerItems(shelf, L);
- console.log("Layer", L, "items count:", its.length);
- if (its.length === 0) continue;
- var st = calcStats(its);
+  var maxLayer = 1;
+  for (var k in DATA) {
+    if (DATA[k].shelf === shelf && DATA[k].layer > maxLayer) maxLayer = DATA[k].layer;
+  }
 
- var card = document.createElement("div");
- card.className = "layer-card";
- card.style.background = "#0a1830";
- card.style.border = "1px solid #1a3a5c";
- card.style.borderRadius = "10px";
- card.style.padding = "12px 14px";
- card.style.cursor = "pointer";
- card.style.marginBottom = "8px";
+  for (var L = 1; L <= maxLayer; L++) {
+    var its = getLayerItems(shelf, L);
+    if (its.length === 0) continue;
+    var st = calcStats(its);
 
- var titleRow = document.createElement("div");
- titleRow.style.cssText = "font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between";
+    var card = document.createElement("div");
+    card.className = "layer-card";
+    card.style.cssText = "background:#0a1830;border:1px solid #1a3a5c;border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer";
 
- var titleLeft = document.createElement("span");
- titleLeft.style.cssText = "display:flex;align-items:center;gap:6px";
+    var titleRow = document.createElement("div");
+    titleRow.style.cssText = "font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between";
 
- var arrow = document.createElement("span");
- arrow.textContent = "\u25b6";
- arrow.style.cssText = "font-size:10px;color:#4cc9f0;display:inline-block;transition:transform .2s";
+    var left = document.createElement("span");
+    left.innerHTML = "<span style='font-size:10px;color:#4cc9f0;margin-right:6px'>▶</span>第 " + L + " 层";
 
- var titleSp = document.createElement("span");
- titleSp.textContent = "\u7B2C " + L + " \u5C42";
+    var countSpan = document.createElement("span");
+    countSpan.style.cssText = "font-size:11px;color:#888";
+    countSpan.innerHTML = "<span style='color:#27ae60'>" + st.occ + "</span>/" + its.length +
+      (st.crit > 0 ? " <span style='color:#e74c3c'>⚠️" + st.crit + "</span>" : "") +
+      (st.low > 0 ? " <span style='color:#f39c12'>⚡" + st.low + "</span>" : "");
 
- var cntSp = document.createElement("span");
- cntSp.style.cssText = "font-size:11px;color:#888";
- cntSp.innerHTML = "<span style='color:#27ae60'>" + st.occ + "</span>/" + its.length +
- (st.crit > 0 ? " <span style='color:#e74c3c'>\u26A0\uFE0F" + st.crit + "</span>" : "") +
- (st.low > 0 ? " <span style='color:#f39c12'>\u26A1" + st.low + "</span>" : "");
+    left.appendChild(countSpan);
+    titleRow.appendChild(left);
 
- titleLeft.appendChild(arrow);
- titleLeft.appendChild(titleSp);
- titleRow.appendChild(titleLeft);
- titleRow.appendChild(cntSp);
- card.appendChild(titleRow);
+    var arrow = document.createElement("span");
+    arrow.textContent = "▶";
+    arrow.style.cssText = "font-size:10px;color:#4cc9f0;display:inline-block;transition:transform .2s";
+    titleRow.appendChild(arrow);
 
- var grid = document.createElement("div");
- grid.style.cssText = "display:none;flex-wrap:wrap;gap:5px;margin-top:8px";
+    card.appendChild(titleRow);
 
- for (var p = 0; p < its.length; p++) {
- var pnum = p + 1;
- var code = shelf + "-L" + L + "-P" + (pnum < 10 ? "00" + pnum : pnum < 100 ? "0" + pnum : "" + pnum);
- var item = DATA[code] || its[p];
- var qty = parseFloat(item[K_QTY]) || 0;
- var name = item[K_NAME] || "";
- var empty = !name || qty === 0;
- var cls = empty ? "ms-empty" : qty <= 10 ? "ms-crit" : qty <= 50 ? "ms-low" : "ms-occ";
- var dot = document.createElement("div");
- dot.style.cssText = "width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;";
- if (cls === "ms-empty") dot.style.cssText += "border-color:#1e2d3d;background:#111827;color:#334;";
- else if (cls === "ms-crit") dot.style.cssText += "border-color:#e74c3c;background:#2a0000;color:#e74c3c;animation:pulse 1.5s infinite;";
- else if (cls === "ms-low") dot.style.cssText += "border-color:#f4d03f;background:#2a2200;color:#f4d03f;";
- else dot.style.cssText += "border-color:#4cc9f0;background:#0a2040;color:#4cc9f0;";
- dot.textContent = (pnum < 10 ? "0" : "") + pnum;
- dot.title = empty ? code + " \u7A7A" : code + " " + name + " x" + qty;
- dot.onclick = (function(it) {
- return function(e) {
- e.stopPropagation();
- showModal(it);
- };
- })(item);
+    var grid = document.createElement("div");
+    grid.style.cssText = "display:flex;flex-wrap:wrap;gap:5px";
 
- dot.onmouseover = function() { this.style.transform = "scale(1.15)"; };
- dot.onmouseout = function() { this.style.transform = "scale(1)"; };
+    for (var j = 0; j < its.length; j++) {
+      var item = its[j];
+      var q = item.qty || 0;
+      var n = item.name || "";
+      var empty = !n || q === 0;
+      var pnum = parseInt(item.code.split("-P")[1]);
+      var cls = empty ? "ms-empty" : q <= 10 ? "ms-crit" : q <= 50 ? "ms-low" : "ms-occ";
 
- grid.appendChild(dot);
- }
+      var dot = document.createElement("div");
+      dot.style.cssText = "width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;";
+      if (cls === "ms-empty") dot.style.cssText += "border-color:#1e2d3d;background:#111827;color:#334;";
+      else if (cls === "ms-crit") dot.style.cssText += "border-color:#e74c3c;background:#2a0000;color:#e74c3c;animation:pulse 1.5s infinite;";
+      else if (cls === "ms-low") dot.style.cssText += "border-color:#f4d03f;background:#2a2200;color:#f4d03f;";
+      else dot.style.cssText += "border-color:#4cc9f0;background:#0a2040;color:#4cc9f0;";
+      dot.textContent = (pnum < 10 ? "0" : "") + pnum;
+      dot.title = empty ? item.code + " 空" : item.code + " " + n + " x" + q;
+      dot.onclick = (function(it) {
+        return function(e) {
+          e.stopPropagation();
+          showModal(it);
+        };
+      })(item);
+      dot.onmouseover = function() { this.style.transform = "scale(1.15)"; };
+      dot.onmouseout = function() { this.style.transform = "scale(1)"; };
+      grid.appendChild(dot);
+    }
 
- card.appendChild(grid);
- card._grid = grid;
- card._arrow = arrow;
+    card.appendChild(grid);
+    card._grid = grid;
+    card._arrow = arrow;
 
- card.onclick = function() {
- var isHidden = this._grid.style.display === "none" || this._grid.style.display === "";
- this._grid.style.display = isHidden ? "flex" : "none";
- this._arrow.textContent = isHidden ? "\u25bc" : "\u25b6";
- };
- card.onmouseover = function() {
- this.style.borderColor = "#4cc9f0";
- this.style.background = "#0a2040";
- };
- card.onmouseout = function() {
- this.style.borderColor = "#1a3a5c";
- this.style.background = "#0a1830";
- };
+    card.onclick = function() {
+      var isHidden = this._grid.style.display === "none" || this._grid.style.display === "";
+      this._grid.style.display = isHidden ? "flex" : "none";
+      this._arrow.textContent = isHidden ? "▼" : "▶";
+    };
+    card.onmouseover = function() {
+      this.style.borderColor = "#4cc9f0";
+      this.style.background = "#0a2040";
+    };
+    card.onmouseout = function() {
+      this.style.borderColor = "#1a3a5c";
+      this.style.background = "#0a1830";
+    };
 
- console.log("Appending card for layer", L, "grid children:", grid.children.length);
- list.appendChild(card);
- }
+    list.appendChild(card);
+  }
 }
 
+// ===== 弹窗详情 =====
 function showModal(item) {
- var qty = parseFloat(item[K_QTY]) || 0;
- var name = item[K_NAME] || "";
- var empty = !name || qty === 0;
- document.getElementById("modalTitle").textContent = "\uD83D\uDCE6 " + (item[K_CODE] || "-");
- document.getElementById("m-code").textContent = item[K_CODE] || "-";
- document.getElementById("m-name").textContent = empty ? "(\u7A7A\u5E93\u4F4D)" : name;
- document.getElementById("m-spec").textContent = item[K_SPEC] || "-";
- document.getElementById("m-qty").textContent = empty ? "-" : qty + " " + (item[K_UNIT] || "");
- document.getElementById("m-note").textContent = item[K_NOTE] || "\u65E0";
- var badge = document.getElementById("m-badge");
- if (empty) {
- badge.textContent = "\u7A7A\u5E93\u4F4D"; badge.className = "modal-badge badge-empty";
- } else if (qty <= 10) {
- badge.textContent = "\u26A0\uFE0F \u4E25\u91CD\u544A\u8B66"; badge.className = "modal-badge badge-critical";
- } else if (qty <= 50) {
- badge.textContent = "\u26A1 \u5EAB\u5B58\u4E0D\u8DB3"; badge.className = "modal-badge badge-low";
- } else {
- badge.textContent = "\u2705 \u5DF2\u5360\u7528"; badge.className = "modal-badge badge-occ";
- }
- var imgPath = item[K_IMG] || "";
- document.getElementById("modalImg").innerHTML = imgPath ? "<img src='" + imgPath + "' />" : "<div class='no-img'>\u6682\u65E0\u56FE\u7247</div>";
- document.getElementById("modalOverlay").classList.add("show");
+  var q = item.qty || 0;
+  var n = item.name || "";
+  var empty = !n || q === 0;
+
+  document.getElementById("modalTitle").textContent = "📦 " + item.code;
+  document.getElementById("m-code").textContent = item.code;
+  document.getElementById("m-itemno").textContent = item.itemno || "-";
+  document.getElementById("m-name").textContent = empty ? "(空库位)" : n;
+  document.getElementById("m-spec").textContent = item.spec || "-";
+  document.getElementById("m-qty").textContent = empty ? "-" : q + (item._raw && item._raw["单位"] ? " " + item._raw["单位"] : "");
+  document.getElementById("m-note").textContent = item.note || "无";
+
+  var imgPath = item.img || "";
+  document.getElementById("modalImg").innerHTML = imgPath
+    ? "<img src='" + imgPath + "' />"
+    : "<div class='no-img'>暂无图片</div>";
+  
+  document.getElementById("modalOverlay").classList.add("show");
 }
 
 function closeModal(e) {
- if (e && e.target !== e.currentTarget) return;
- document.getElementById("modalOverlay").classList.remove("show");
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById("modalOverlay").classList.remove("show");
 }
 
+// ===== 更新统计 =====
 function updateStats() {
- var all = [];
- for (var k in DATA) all.push(DATA[k]);
- var occ = 0, alert = 0;
- for (var i = 0; i < all.length; i++) {
- var q = parseFloat(all[i][K_QTY]) || 0;
- var n = all[i][K_NAME] || "";
- if (n && q > 0) occ++;
- if (n && q > 0 && q <= 50) alert++;
- }
- document.getElementById("s-total").textContent = all.length;
- document.getElementById("s-occ").textContent = occ;
- document.getElementById("s-alert").textContent = alert;
+  var all = Object.keys(DATA).map(function(k) { return DATA[k]; });
+  var occ = 0, alert = 0;
+  for (var i = 0; i < all.length; i++) {
+    var q = all[i].qty || 0;
+    var n = all[i].name || "";
+    if (n && q > 0) occ++;
+    if (n && q > 0 && q <= 50) alert++;
+  }
+  document.getElementById("s-total").textContent = all.length;
+  document.getElementById("s-occ").textContent = occ;
+  document.getElementById("s-alert").textContent = alert;
 }
 
+// ===== Toast 提示 =====
 function showToast(msg) {
- var t = document.getElementById("toast");
- t.textContent = msg;
- t.classList.add("show");
- setTimeout(function() { t.classList.remove("show"); }, 3000);
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(function() { t.classList.remove("show"); }, 3000);
 }
 
-document.addEventListener("keydown", function(e) {
- if (e.key === "Escape") closeModal();
+// ===== 事件绑定 =====
+document.getElementById("fileInput").addEventListener("change", function(e) {
+  var file = e.target.files[0];
+  if (file) loadExcel(file);
 });
 
-loadData();
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") closeModal();
+});
+
+// ===== 自动检测本地 Excel 文件 =====
+(function autoLoadLocalExcel() {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "data.xlsx?t=" + Date.now(), true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      try {
+        var data = new Uint8Array(xhr.response);
+        var workbook = XLSX.read(data, {type: "array"});
+        var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        var json = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
+        RAW_DATA = json;
+        DATA = {};
+        var shelves = new Set();
+        for (var i = 0; i < json.length; i++) {
+          var item = buildItem(json[i]);
+          if (item) {
+            DATA[item.code] = item;
+            shelves.add(item.shelf);
+          }
+        }
+        var shelfList = Array.from(shelves).sort();
+        document.getElementById("fileName").textContent = "data.xlsx (已自动加载)";
+        renderBoard(shelfList);
+        updateStats();
+        showToast("✅ 自动加载 data.xlsx，共 " + Object.keys(DATA).length + " 条");
+      } catch(e) {
+        console.log("自动加载 xlsx 失败，尝试加载 data.json:", e.message);
+        // 降级尝试 data.json（兼容旧版）
+        var xhr2 = new XMLHttpRequest();
+        xhr2.open("GET", "data.json?t=" + Date.now(), true);
+        xhr2.onreadystatechange = function() {
+          if (xhr2.readyState === 4 && xhr2.status === 200) {
+            try {
+              var json = JSON.parse(xhr2.responseText);
+              DATA = {};
+              for (var i = 0; i < json.length; i++) {
+                var item = {
+                  code: json[i]["库位编码"] || json[i]["库位"] || json[i]["code"] || "",
+                  itemno: json[i]["料号"] || json[i]["itemno"] || "",
+                  name: json[i]["物料名称"] || json[i]["品名"] || "",
+                  spec: json[i]["规格型号"] || json[i]["规格"] || "",
+                  qty: parseFloat(json[i]["数量"] || json[i]["可用量"] || "0") || 0,
+                  img: json[i]["物料图片路径"] || "",
+                  note: json[i]["备注"] || "",
+                  shelf: "",
+                  layer: 0
+                };
+                if (!item.code) continue;
+                var parts = item.code.split("-");
+                item.shelf = parts[0] || "";
+                var layerPart = item.code.match(/-L(\d+)-/);
+                item.layer = layerPart ? parseInt(layerPart[1]) : 0;
+                DATA[item.code] = item;
+              }
+              var shelves = new Set();
+              for (var k in DATA) shelves.add(DATA[k].shelf);
+              var shelfList = Array.from(shelves).sort();
+              document.getElementById("fileName").textContent = "data.json (已自动加载)";
+              renderBoard(shelfList);
+              updateStats();
+              showToast("✅ 自动加载 data.json，共 " + Object.keys(DATA).length + " 条");
+            } catch(e2) {
+              console.log("自动加载 data.json 失败:", e2.message);
+            }
+          }
+        };
+        xhr2.send();
+      }
+    }
+  };
+  xhr.send();
+})();
 </script>
 </body>
 </html>

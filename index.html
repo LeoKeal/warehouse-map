@@ -126,6 +126,7 @@ var KEY_NAME = ["品名", "物料名称", "名称", "商品名称"];
 var KEY_SPEC = ["规格", "规格型号", "型号"];
 var KEY_QTY = ["可用量", "库存量", "数量", "可用库存", "当前库存"];
 var KEY_IMG = ["图片", "物料图片", "图片路径", "照片", "图片URL"];
+var KEY_SAFE = ["安全库存", "安全库存量", "安全量", "最低库存", "最低库存量"];
 var KEY_NOTE = ["备注", "备注信息", "说明"];
 
 // ===== 全局数据 =====
@@ -438,33 +439,93 @@ function showLayers(shelf) {
 // ===== 弹窗详情（支持同库位多物料）=====
 function showModal(loc) {
   var items = loc.items;
-  document.getElementById("modalTitle").textContent = "📦 " + loc.code;
   var body = document.getElementById("modalBody");
   body.innerHTML = "";
 
-  // 货位标题行
+  document.getElementById("modalTitle").textContent = "📦 " + loc.code;
+
+  // ===== 顶部图片区 =====
+  var imgArea = document.createElement("div");
+  imgArea.style.cssText = "width:100%;height:150px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;margin-bottom:12px;position:relative";
+  imgArea.id = "modal-img-area";
+
+  var imgPlaceholder = document.createElement("div");
+  imgPlaceholder.id = "modal-img-ph";
+  imgPlaceholder.style.cssText = "color:#2a3a5a;font-size:14px;text-align:center";
+  imgPlaceholder.innerHTML = "🖼️<br><span style='font-size:12px'>暂无图片</span>";
+
+  var imgEl = document.createElement("img");
+  imgEl.id = "modal-img-el";
+  imgEl.style.cssText = "max-width:100%;max-height:140px;object-fit:contain;display:none";
+
+  var itemnoTag = document.createElement("div");
+  itemnoTag.id = "modal-itemno-tag";
+  itemnoTag.style.cssText = "position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:#0a2040;border:1px solid #4cc9f0;color:#4cc9f0;padding:3px 12px;border-radius:12px;font-size:12px;font-weight:bold;display:none;white-space:nowrap";
+
+  imgArea.appendChild(imgPlaceholder);
+  imgArea.appendChild(imgEl);
+  imgArea.appendChild(itemnoTag);
+  body.appendChild(imgArea);
+
+  // ===== 货位标题行 =====
   var locBar = document.createElement("div");
   locBar.className = "modal-location";
+  locBar.style.cssText = "background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:8px 14px;font-size:13px;color:#4cc9f0;font-weight:bold;text-align:center;margin-bottom:4px";
   locBar.textContent = "📍 " + loc.code;
   if (items.length > 1) {
-    var countBadge = document.createElement("span");
-    countBadge.className = "modal-items-count";
-    countBadge.textContent = "共 " + items.length + " 种物料";
-    locBar.appendChild(countBadge);
+    var badge = document.createElement("span");
+    badge.style.cssText = "font-size:11px;color:#9b59b6;font-weight:normal;margin-left:8px";
+    badge.textContent = "共 " + items.length + " 种物料";
+    locBar.appendChild(badge);
   }
   body.appendChild(locBar);
 
-  // 汇总行
-  if (items.length > 1) {
-    var totalQty = items.reduce(function(s, it) { return s + (it.qty || 0); }, 0);
-    var avgQty = Math.round(totalQty / items.length);
-    var sumRow = document.createElement("div");
-    sumRow.style.cssText = "font-size:12px;color:#888;text-align:center;padding:4px 0";
-    sumRow.textContent = "合计 " + items.length + " 种物料，总库存 " + totalQty + "（均 " + avgQty + "）";
-    body.appendChild(sumRow);
+  // ===== 切换图片的函数 =====
+  function switchToItem(idx) {
+    var it = items[idx];
+    var imgPh = document.getElementById("modal-img-ph");
+    var imgEl2 = document.getElementById("modal-img-el");
+    var tag = document.getElementById("modal-itemno-tag");
+    var allCards = body.querySelectorAll(".modal-item-card");
+
+    // 高亮当前卡片
+    for (var c = 0; c < allCards.length; c++) {
+      allCards[c].style.borderColor = "#1a3a5c";
+      allCards[c].style.background = "#0a1628";
+    }
+    if (allCards[idx]) {
+      allCards[idx].style.borderColor = "#4cc9f0";
+      allCards[idx].style.background = "#0a2040";
+    }
+
+    // 切换图片
+    if (it.img && it.img !== "" && it.img !== "物料图片路径") {
+      imgPh.style.display = "none";
+      imgEl2.style.display = "block";
+      imgEl2.src = it.img;
+    } else {
+      imgPh.style.display = "flex";
+      imgPh.style.flexDirection = "column";
+      imgEl2.style.display = "none";
+    }
+
+    // 切换料号标签
+    if (it.itemno && it.itemno !== "") {
+      tag.style.display = "block";
+      var safe = it.safeQty || 0;
+      var q = it.qty || 0;
+      var belowSafe = !!(safe > 0 && q < safe);
+      var labelText = "料号: " + it.itemno;
+      if (belowSafe) labelText += " ⚠️";
+      tag.textContent = labelText;
+      tag.style.color = belowSafe ? "#e74c3c" : "#4cc9f0";
+      tag.style.borderColor = belowSafe ? "#e74c3c" : "#4cc9f0";
+    } else {
+      tag.style.display = "none";
+    }
   }
 
-  // 每个物料一条卡片
+  // ===== 物料卡片列表 =====
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
     var q = it.qty || 0;
@@ -473,67 +534,82 @@ function showModal(loc) {
 
     var card = document.createElement("div");
     card.className = "modal-item-card";
+    card.style.cssText = "background:#0a1628;border:1px solid #1a3a5c;border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:all .2s";
+
+    // 点击切换图片
+    card.onclick = (function(idx) {
+      return function() { switchToItem(idx); };
+    })(i);
 
     // 头部：名称 + 数量
     var header = document.createElement("div");
-    header.className = "modal-item-header";
+    header.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:4px";
 
     var nameEl = document.createElement("div");
-    nameEl.className = "modal-item-name";
+    nameEl.style.cssText = "font-size:13px;color:#4cc9f0;font-weight:bold;flex:1";
     nameEl.textContent = (items.length > 1 ? (i + 1) + ". " : "") + (empty ? "(空)" : n);
 
+    var safeQty = it.safeQty || 0;
+    var belowSafe = !empty && safeQty > 0 && q < safeQty;
     var qtyEl = document.createElement("div");
-    qtyEl.className = "modal-item-qty";
-    if (empty) qtyEl.className += " empty";
-    else if (q <= 10) qtyEl.className += " crit";
-    else if (q <= 50) qtyEl.className += " low";
-    else qtyEl.className += " ok";
+    qtyEl.style.cssText = "font-size:12px;font-weight:bold;padding:2px 8px;border-radius:10px";
+    if (empty) qtyEl.style.cssText += "background:#111827;color:#444";
+    else if (belowSafe) qtyEl.style.cssText += "background:#2a0000;color:#e74c3c";
+    else if (q <= 10) qtyEl.style.cssText += "background:#2a0000;color:#e74c3c";
+    else if (q <= 50) qtyEl.style.cssText += "background:#2a2000;color:#f4d03f";
+    else qtyEl.style.cssText += "background:#0a2040;color:#27ae60";
     qtyEl.textContent = empty ? "空" : q;
+    if (!empty && it._raw && it._raw["单位"]) qtyEl.textContent += " " + it._raw["单位"];
 
     header.appendChild(nameEl);
     header.appendChild(qtyEl);
 
     // 明细行
+    var safeQty = it.safeQty || 0;
     var detailRow = document.createElement("div");
-    detailRow.className = "modal-item-row";
-    var unit = it._raw && it._raw["单位"] ? it._raw["单位"] : "";
-    var detailHtml = 
-      (it.itemno ? "料号: <span>" + it.itemno + "</span>" : "") +
-      (it.spec ? " &nbsp;规格: <span>" + it.spec + "</span>" : "") +
-      (unit ? " &nbsp;单位: <span>" + unit + "</span>" : "");
-    detailRow.innerHTML = detailHtml || "<span style='color:#333'>—</span>";
+    detailRow.style.cssText = "font-size:11px;color:#6a8aaa";
+    var detailText = (it.itemno ? "料号: <span style='color:#4cc9f0'>" + it.itemno + "</span>" : "") +
+      (it.spec ? " &nbsp;规格: <span style='color:#4cc9f0'>" + it.spec + "</span>" : "") +
+      (safeQty > 0 ? " &nbsp;安全: <span style='color:#f39c12'>" + safeQty + "</span>" : "");
+    detailRow.innerHTML = detailText || "<span style='color:#333'>—</span>";
+
+    card.appendChild(header);
+    card.appendChild(detailRow);
 
     // 备注行
     if (it.note) {
       var noteRow = document.createElement("div");
-      noteRow.style.cssText = "font-size:11px;color:#f39c12;margin-top:4px;padding:3px 6px;background:rgba(243,156,18,0.1);border-radius:4px;display:inline-block";
+      noteRow.style.cssText = "font-size:11px;color:#f39c12;margin-top:4px;padding:2px 6px;background:rgba(243,156,18,0.1);border-radius:4px;display:inline-block";
       noteRow.textContent = "📝 " + it.note;
       card.appendChild(noteRow);
     }
 
-    card.appendChild(header);
-    card.appendChild(detailRow);
+    // 有图片的标记
+    if (it.img && it.img !== "" && it.img !== "物料图片路径") {
+      var imgIcon = document.createElement("div");
+      imgIcon.style.cssText = "position:absolute;top:6px;right:8px;font-size:11px;opacity:.6";
+      imgIcon.textContent = "🖼️";
+      card.style.position = "relative";
+      card.appendChild(imgIcon);
+    }
+
     body.appendChild(card);
   }
 
-  // 图片（如果有的话，取第一个有图片的物料）
-  var imgItem = items.find(function(it) { return it.img && it.img !== ""; });
-  if (imgItem) {
-    var div = document.createElement("div");
-    div.className = "modal-img";
-    div.style.cssText = "width:100%;height:120px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0";
-    div.innerHTML = "<img src='" + imgItem.img + "' style='max-width:100%;max-height:110px;object-fit:contain' />";
-    body.insertBefore(div, body.firstChild);
-  } else {
-    var div = document.createElement("div");
-    div.className = "modal-img";
-    div.style.cssText = "width:100%;height:120px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0";
-    div.innerHTML = "<div style='color:#2a3a5a;font-size:13px'>暂无图片</div>";
-    body.insertBefore(div, body.firstChild);
+  // ===== 默认选中第一个有图片的物料 =====
+  var firstWithImg = -1;
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].img && items[i].img !== "" && items[i].img !== "物料图片路径") {
+      firstWithImg = i;
+      break;
+    }
   }
+  if (firstWithImg === -1) firstWithImg = 0;
+  switchToItem(firstWithImg);
 
   document.getElementById("modalOverlay").classList.add("show");
 }
+
 
 function closeModal(e) {
   if (e && e.target !== e.currentTarget) return;
@@ -623,7 +699,8 @@ document.addEventListener("keydown", function(e) {
               DATA[code] = { code: code, shelf: shelf, layer: layer, pos: pos, items: [] };
               shelves.add(shelf);
             }
-            DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, img: img, note: note, _raw: { "单位": unit } });
+            var safeQty = parseFloat(row["安全库存"] || "0") || 0;
+            DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, safeQty: safeQty, img: itemno ? "images/" + itemno + ".jpg" : "", note: note, _raw: { "单位": unit } });
           }
           var shelfList = Array.from(shelves).sort();
           document.getElementById("fileName").textContent = "data.json (已自动加载)";

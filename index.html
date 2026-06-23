@@ -34,6 +34,13 @@
  .layer-list{display:flex;flex-direction:column;gap:8px}
  .layer-card{background:#0a1830;border:1px solid #1a3a5c;border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .2s}
  .layer-card:hover{border-color:#4cc9f0;background:#0a2040}
+ .layer-card-title{font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+ .layer-card-count{font-size:11px;color:#888}
+ .layer-card-count .warn{color:#f39c12}
+ .layer-card-count .crit{color:#e74c3c}
+ .pos-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+ .pos-dot{width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s}
+ .pos-dot:hover{transform:scale(1.15)}
  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
  .modal-overlay.show{display:flex}
  .modal{background:linear-gradient(135deg,#0d1f38,#0a1628);border:2px solid #4cc9f0;border-radius:16px;width:460px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}
@@ -63,30 +70,30 @@
 </head>
 <body>
 <header>
- <h1>📦 仓库库位看板</h1>
+ <h1>&#128230; 仓库库位看板</h1>
  <div class="stats">总库位 <span id="s-total">0</span> · 已占用 <span id="s-occ" style="color:#27ae60">0</span> · 告警 <span id="s-alert" style="color:#e74c3c">0</span></div>
- <button class="btn" onclick="loadData()">🔄 刷新数据</button>
+ <button class="btn" onclick="loadData()">&#128260; 刷新数据</button>
 </header>
 <div class="main">
  <div class="board" id="board">
- <div class="tip">👇 点击货架 → 选择层数 → 点击货位查看详情</div>
+ <div class="tip">&#128070; 点击货架 → 选择层数 → 点击货位查看详情</div>
  <div class="shelf" id="shelf-a" onclick="showLayers('A')">
- <div class="shelf-title">◆ A 区货架</div>
+ <div class="shelf-title">&#9670; A 区货架</div>
  <div class="shelf-sub">4层 · 每层6个货位</div>
  <div class="shelf-layers">点击进入</div>
  <div class="layer-row" id="shelf-a-preview"></div>
  </div>
  </div>
  <div class="panel">
- <div class="panel-title">📋 库位详情</div>
- <div class="panel-hint" id="panelHint"><div class="panel-hint-icon">👇</div><div>点击左侧货架<br>查看层数和货位</div></div>
+ <div class="panel-title" id="panelTitle">&#128203; 库位详情</div>
+ <div class="panel-hint" id="panelHint"><div class="panel-hint-icon">&#128070;</div><div>点击左侧货架<br>查看层数和货位</div></div>
  <div class="layer-list" id="layerList"></div>
  </div>
 </div>
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
  <div class="modal" onclick="event.stopPropagation()">
  <div class="modal-header">
- <h2 id="modalTitle">📦 货位详情</h2>
+ <h2 id="modalTitle">&#128230; 货位详情</h2>
  <button class="modal-close" onclick="closeModal()">×</button>
  </div>
  <div class="modal-body">
@@ -105,10 +112,10 @@
 <script>
 var K_CODE = "库位编码";
 var K_NAME = "物料名称";
-var K_QTY  = "数量";
+var K_QTY = "数量";
 var K_SPEC = "规格型号";
 var K_UNIT = "单位";
-var K_IMG  = "物料图片路径";
+var K_IMG = "物料图片路径";
 var K_NOTE = "备注";
 
 var DATA = {};
@@ -127,12 +134,12 @@ function loadData() {
  }
  updateStats();
  renderPreviews();
- showToast("✅ 加载完成，共 " + json.length + " 条");
+ showToast("\u2705 \u52A0\u8F7D\u5B8C\u6210\uFF0C\u5171 " + json.length + " \u6761");
  } catch(e) {
- showToast("❌ JSON解析错误：" + e.message);
+ showToast("\u274C JSON\u89E3\u6790\u9519\u8BEF\uFF1A" + e.message);
  }
  } else {
- showToast("❌ 加载失败：" + xhr.status);
+ showToast("\u274C \u52A0\u8F7D\u5931\u8D25\uFF1A" + xhr.status);
  }
  }
  };
@@ -168,28 +175,31 @@ function renderPreviews() {
  if (!el) continue;
  el.innerHTML = "";
  for (var l = 1; l <= 4; l++) {
- var its = getLayerItems(shelf, l);
- var st = calcStats(its);
- var cls = st.crit > 0 ? "ms-crit" : st.low > 0 ? "ms-low" : st.occ > 0 ? "ms-occ" : "ms-empty";
+ var layerItems = getLayerItems(shelf, l);
+ var stats = calcStats(layerItems);
+ var cls = stats.crit > 0 ? "ms-crit" : stats.low > 0 ? "ms-low" : stats.occ > 0 ? "ms-occ" : "ms-empty";
  var dot = document.createElement("div");
  dot.className = "mini-slot " + cls;
  dot.textContent = "L" + l;
- dot.title = "第" + l + "层：" + st.occ + "/" + its.length + " 已占用";
+ dot.title = "\u7B2C" + l + "\u5C42\uFF1A" + stats.occ + "/" + layerItems.length + " \u5DF2\u5360\u7528";
  el.appendChild(dot);
  }
  }
 }
 
 function showLayers(shelf) {
+ if (Object.keys(DATA).length === 0) { showToast("\u26A0\uFE0F \u8BF7\u7B49\u5F85\u6570\u636E\u52A0\u8F7D\u5B8C\u6210"); return; }
+ console.log("showLayers called, shelf:", shelf, "DATA keys count:", Object.keys(DATA).length);
  document.getElementById("panelHint").style.display = "none";
  var list = document.getElementById("layerList");
  list.innerHTML = "";
- document.getElementById("panelTitle").textContent = "📋 " + shelf + " 区货架 · 选择层数";
+ document.getElementById("panelTitle").textContent = "\uD83D\uDCCB " + shelf + " \u533A\u8D27\u67DC \u00B7 \u9009\u62E9\u5C42\u6570";
 
  for (var L = 1; L <= 4; L++) {
- var its = getLayerItems(shelf, L);      // ✅ 修正：原 layerItems → getLayerItems
+ var its = getLayerItems(shelf, L);
+ console.log("Layer", L, "items count:", its.length);
  if (its.length === 0) continue;
- var st = calcStats(its);               // ✅ 修正：原 st2 → calcStats
+ var st = calcStats(its);
 
  var card = document.createElement("div");
  card.className = "layer-card";
@@ -200,7 +210,6 @@ function showLayers(shelf) {
  card.style.cursor = "pointer";
  card.style.marginBottom = "8px";
 
- // 标题行
  var titleRow = document.createElement("div");
  titleRow.style.cssText = "font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between";
 
@@ -208,17 +217,17 @@ function showLayers(shelf) {
  titleLeft.style.cssText = "display:flex;align-items:center;gap:6px";
 
  var arrow = document.createElement("span");
- arrow.textContent = "\u25b6"; // ▶
+ arrow.textContent = "\u25b6";
  arrow.style.cssText = "font-size:10px;color:#4cc9f0;display:inline-block;transition:transform .2s";
 
  var titleSp = document.createElement("span");
- titleSp.textContent = "第 " + L + " 层";
+ titleSp.textContent = "\u7B2C " + L + " \u5C42";
 
  var cntSp = document.createElement("span");
  cntSp.style.cssText = "font-size:11px;color:#888";
  cntSp.innerHTML = "<span style='color:#27ae60'>" + st.occ + "</span>/" + its.length +
- (st.crit > 0 ? " <span style='color:#e74c3c'>⚠️" + st.crit + "</span>" : "") +
- (st.low > 0 ? " <span style='color:#f39c12'>⚡" + st.low + "</span>" : "");
+ (st.crit > 0 ? " <span style='color:#e74c3c'>\u26A0\uFE0F" + st.crit + "</span>" : "") +
+ (st.low > 0 ? " <span style='color:#f39c12'>\u26A1" + st.low + "</span>" : "");
 
  titleLeft.appendChild(arrow);
  titleLeft.appendChild(titleSp);
@@ -226,7 +235,6 @@ function showLayers(shelf) {
  titleRow.appendChild(cntSp);
  card.appendChild(titleRow);
 
- // 货位网格
  var grid = document.createElement("div");
  grid.style.cssText = "display:none;flex-wrap:wrap;gap:5px;margin-top:8px";
 
@@ -234,11 +242,10 @@ function showLayers(shelf) {
  var pnum = p + 1;
  var code = shelf + "-L" + L + "-P" + (pnum < 10 ? "00" + pnum : pnum < 100 ? "0" + pnum : "" + pnum);
  var item = DATA[code] || its[p];
- var qty = parseFloat(item[K_QTY]) || 0;       // ✅ 修正：KQ → K_QTY
- var name = item[K_NAME] || "";                  // ✅ 修正：KN → K_NAME
+ var qty = parseFloat(item[K_QTY]) || 0;
+ var name = item[K_NAME] || "";
  var empty = !name || qty === 0;
  var cls = empty ? "ms-empty" : qty <= 10 ? "ms-crit" : qty <= 50 ? "ms-low" : "ms-occ";
-
  var dot = document.createElement("div");
  dot.style.cssText = "width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;";
  if (cls === "ms-empty") dot.style.cssText += "border-color:#1e2d3d;background:#111827;color:#334;";
@@ -246,7 +253,7 @@ function showLayers(shelf) {
  else if (cls === "ms-low") dot.style.cssText += "border-color:#f4d03f;background:#2a2200;color:#f4d03f;";
  else dot.style.cssText += "border-color:#4cc9f0;background:#0a2040;color:#4cc9f0;";
  dot.textContent = (pnum < 10 ? "0" : "") + pnum;
- dot.title = empty ? code + " 空" : code + " " + name + " x" + qty;
+ dot.title = empty ? code + " \u7A7A" : code + " " + name + " x" + qty;
  dot.onclick = (function(it) {
  return function(e) {
  e.stopPropagation();
@@ -264,11 +271,10 @@ function showLayers(shelf) {
  card._grid = grid;
  card._arrow = arrow;
 
- // ✅ 点击卡片：展开/收起 + 箭头切换
  card.onclick = function() {
  var isHidden = this._grid.style.display === "none" || this._grid.style.display === "";
  this._grid.style.display = isHidden ? "flex" : "none";
- this._arrow.textContent = isHidden ? "\u25bc" : "\u25b6"; // ▼ 展开 / ▶ 收起
+ this._arrow.textContent = isHidden ? "\u25bc" : "\u25b6";
  };
  card.onmouseover = function() {
  this.style.borderColor = "#4cc9f0";
@@ -279,6 +285,7 @@ function showLayers(shelf) {
  this.style.background = "#0a1830";
  };
 
+ console.log("Appending card for layer", L, "grid children:", grid.children.length);
  list.appendChild(card);
  }
 }
@@ -287,24 +294,24 @@ function showModal(item) {
  var qty = parseFloat(item[K_QTY]) || 0;
  var name = item[K_NAME] || "";
  var empty = !name || qty === 0;
- document.getElementById("modalTitle").textContent = "📦 " + (item[K_CODE] || "-");
+ document.getElementById("modalTitle").textContent = "\uD83D\uDCE6 " + (item[K_CODE] || "-");
  document.getElementById("m-code").textContent = item[K_CODE] || "-";
- document.getElementById("m-name").textContent = empty ? "(空库位)" : name;
+ document.getElementById("m-name").textContent = empty ? "(\u7A7A\u5E93\u4F4D)" : name;
  document.getElementById("m-spec").textContent = item[K_SPEC] || "-";
  document.getElementById("m-qty").textContent = empty ? "-" : qty + " " + (item[K_UNIT] || "");
- document.getElementById("m-note").textContent = item[K_NOTE] || "无";
+ document.getElementById("m-note").textContent = item[K_NOTE] || "\u65E0";
  var badge = document.getElementById("m-badge");
  if (empty) {
- badge.textContent = "空库位"; badge.className = "modal-badge badge-empty";
+ badge.textContent = "\u7A7A\u5E93\u4F4D"; badge.className = "modal-badge badge-empty";
  } else if (qty <= 10) {
- badge.textContent = "⚠️ 严重告警"; badge.className = "modal-badge badge-critical";
+ badge.textContent = "\u26A0\uFE0F \u4E25\u91CD\u544A\u8B66"; badge.className = "modal-badge badge-critical";
  } else if (qty <= 50) {
- badge.textContent = "⚡ 库存不足"; badge.className = "modal-badge badge-low";
+ badge.textContent = "\u26A1 \u5EAB\u5B58\u4E0D\u8DB3"; badge.className = "modal-badge badge-low";
  } else {
- badge.textContent = "✅ 已占用"; badge.className = "modal-badge badge-occ";
+ badge.textContent = "\u2705 \u5DF2\u5360\u7528"; badge.className = "modal-badge badge-occ";
  }
  var imgPath = item[K_IMG] || "";
- document.getElementById("modalImg").innerHTML = imgPath ? "<img src='" + imgPath + "' />" : "<div class='no-img'>暂无图片</div>";
+ document.getElementById("modalImg").innerHTML = imgPath ? "<img src='" + imgPath + "' />" : "<div class='no-img'>\u6682\u65E0\u56FE\u7247</div>";
  document.getElementById("modalOverlay").classList.add("show");
 }
 

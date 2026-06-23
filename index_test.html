@@ -438,33 +438,86 @@ function showLayers(shelf) {
 // ===== 弹窗详情（支持同库位多物料）=====
 function showModal(loc) {
   var items = loc.items;
-  document.getElementById("modalTitle").textContent = "📦 " + loc.code;
   var body = document.getElementById("modalBody");
   body.innerHTML = "";
 
-  // 货位标题行
+  document.getElementById("modalTitle").textContent = "📦 " + loc.code;
+
+  // ===== 顶部图片区 =====
+  var imgArea = document.createElement("div");
+  imgArea.style.cssText = "width:100%;height:150px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;margin-bottom:12px;position:relative";
+  imgArea.id = "modal-img-area";
+
+  var imgPlaceholder = document.createElement("div");
+  imgPlaceholder.id = "modal-img-ph";
+  imgPlaceholder.style.cssText = "color:#2a3a5a;font-size:14px;text-align:center";
+  imgPlaceholder.innerHTML = "🖼️<br><span style='font-size:12px'>暂无图片</span>";
+
+  var imgEl = document.createElement("img");
+  imgEl.id = "modal-img-el";
+  imgEl.style.cssText = "max-width:100%;max-height:140px;object-fit:contain;display:none";
+
+  var itemnoTag = document.createElement("div");
+  itemnoTag.id = "modal-itemno-tag";
+  itemnoTag.style.cssText = "position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:#0a2040;border:1px solid #4cc9f0;color:#4cc9f0;padding:3px 12px;border-radius:12px;font-size:12px;font-weight:bold;display:none;white-space:nowrap";
+
+  imgArea.appendChild(imgPlaceholder);
+  imgArea.appendChild(imgEl);
+  imgArea.appendChild(itemnoTag);
+  body.appendChild(imgArea);
+
+  // ===== 货位标题行 =====
   var locBar = document.createElement("div");
   locBar.className = "modal-location";
+  locBar.style.cssText = "background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:8px 14px;font-size:13px;color:#4cc9f0;font-weight:bold;text-align:center;margin-bottom:4px";
   locBar.textContent = "📍 " + loc.code;
   if (items.length > 1) {
-    var countBadge = document.createElement("span");
-    countBadge.className = "modal-items-count";
-    countBadge.textContent = "共 " + items.length + " 种物料";
-    locBar.appendChild(countBadge);
+    var badge = document.createElement("span");
+    badge.style.cssText = "font-size:11px;color:#9b59b6;font-weight:normal;margin-left:8px";
+    badge.textContent = "共 " + items.length + " 种物料";
+    locBar.appendChild(badge);
   }
   body.appendChild(locBar);
 
-  // 汇总行
-  if (items.length > 1) {
-    var totalQty = items.reduce(function(s, it) { return s + (it.qty || 0); }, 0);
-    var avgQty = Math.round(totalQty / items.length);
-    var sumRow = document.createElement("div");
-    sumRow.style.cssText = "font-size:12px;color:#888;text-align:center;padding:4px 0";
-    sumRow.textContent = "合计 " + items.length + " 种物料，总库存 " + totalQty + "（均 " + avgQty + "）";
-    body.appendChild(sumRow);
+  // ===== 切换图片的函数 =====
+  function switchToItem(idx) {
+    var it = items[idx];
+    var imgPh = document.getElementById("modal-img-ph");
+    var imgEl2 = document.getElementById("modal-img-el");
+    var tag = document.getElementById("modal-itemno-tag");
+    var allCards = body.querySelectorAll(".modal-item-card");
+
+    // 高亮当前卡片
+    for (var c = 0; c < allCards.length; c++) {
+      allCards[c].style.borderColor = "#1a3a5c";
+      allCards[c].style.background = "#0a1628";
+    }
+    if (allCards[idx]) {
+      allCards[idx].style.borderColor = "#4cc9f0";
+      allCards[idx].style.background = "#0a2040";
+    }
+
+    // 切换图片
+    if (it.img && it.img !== "" && it.img !== "物料图片路径") {
+      imgPh.style.display = "none";
+      imgEl2.style.display = "block";
+      imgEl2.src = it.img;
+    } else {
+      imgPh.style.display = "flex";
+      imgPh.style.flexDirection = "column";
+      imgEl2.style.display = "none";
+    }
+
+    // 切换料号标签
+    if (it.itemno && it.itemno !== "") {
+      tag.style.display = "block";
+      tag.textContent = "料号: " + it.itemno;
+    } else {
+      tag.style.display = "none";
+    }
   }
 
-  // 每个物料一条卡片
+  // ===== 物料卡片列表 =====
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
     var q = it.qty || 0;
@@ -473,58 +526,77 @@ function showModal(loc) {
 
     var card = document.createElement("div");
     card.className = "modal-item-card";
+    card.style.cssText = "background:#0a1628;border:1px solid #1a3a5c;border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:all .2s";
+
+    // 点击切换图片
+    card.onclick = (function(idx) {
+      return function() { switchToItem(idx); };
+    })(i);
 
     // 头部：名称 + 数量
     var header = document.createElement("div");
-    header.className = "modal-item-header";
+    header.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:4px";
 
     var nameEl = document.createElement("div");
-    nameEl.className = "modal-item-name";
+    nameEl.style.cssText = "font-size:13px;color:#4cc9f0;font-weight:bold;flex:1";
     nameEl.textContent = (items.length > 1 ? (i + 1) + ". " : "") + (empty ? "(空)" : n);
 
     var qtyEl = document.createElement("div");
-    qtyEl.className = "modal-item-qty";
-    if (empty) qtyEl.className += " empty";
-    else if (q <= 10) qtyEl.className += " crit";
-    else if (q <= 50) qtyEl.className += " low";
-    else qtyEl.className += " ok";
+    qtyEl.style.cssText = "font-size:12px;font-weight:bold;padding:2px 8px;border-radius:10px";
+    if (empty) qtyEl.style.cssText += "background:#111827;color:#444";
+    else if (q <= 10) qtyEl.style.cssText += "background:#2a0000;color:#e74c3c";
+    else if (q <= 50) qtyEl.style.cssText += "background:#2a2000;color:#f4d03f";
+    else qtyEl.style.cssText += "background:#0a2040;color:#27ae60";
     qtyEl.textContent = empty ? "空" : q;
+    if (!empty && it._raw && it._raw["单位"]) qtyEl.textContent += " " + it._raw["单位"];
 
     header.appendChild(nameEl);
     header.appendChild(qtyEl);
 
     // 明细行
     var detailRow = document.createElement("div");
-    detailRow.className = "modal-item-row";
-    var unit = it._raw && it._raw["单位"] ? it._raw["单位"] : "";
-    var detailHtml = 
-      (it.itemno ? "料号: <span>" + it.itemno + "</span>" : "") +
-      (it.spec ? " &nbsp;规格: <span>" + it.spec + "</span>" : "") +
-      (unit ? " &nbsp;单位: <span>" + unit + "</span>" : "");
-    detailRow.innerHTML = detailHtml || "<span style='color:#333'>—</span>";
+    detailRow.style.cssText = "font-size:11px;color:#6a8aaa";
+    var detailText = (it.itemno ? "料号: <span style='color:#4cc9f0'>" + it.itemno + "</span>" : "") +
+      (it.spec ? " &nbsp;规格: <span style='color:#4cc9f0'>" + it.spec + "</span>" : "");
+    detailRow.innerHTML = detailText || "<span style='color:#333'>—</span>";
+
+    card.appendChild(header);
+    card.appendChild(detailRow);
 
     // 备注行
     if (it.note) {
       var noteRow = document.createElement("div");
-      noteRow.style.cssText = "font-size:11px;color:#f39c12;margin-top:4px;padding:3px 6px;background:rgba(243,156,18,0.1);border-radius:4px;display:inline-block";
+      noteRow.style.cssText = "font-size:11px;color:#f39c12;margin-top:4px;padding:2px 6px;background:rgba(243,156,18,0.1);border-radius:4px;display:inline-block";
       noteRow.textContent = "📝 " + it.note;
       card.appendChild(noteRow);
     }
 
-    card.appendChild(header);
-    card.appendChild(detailRow);
+    // 有图片的标记
+    if (it.img && it.img !== "" && it.img !== "物料图片路径") {
+      var imgIcon = document.createElement("div");
+      imgIcon.style.cssText = "position:absolute;top:6px;right:8px;font-size:11px;opacity:.6";
+      imgIcon.textContent = "🖼️";
+      card.style.position = "relative";
+      card.appendChild(imgIcon);
+    }
+
     body.appendChild(card);
   }
 
-  // 顶部图片区 + 料号区（固定结构，后续由 JS 动态更新）
-  var imgArea = document.createElement("div");
-  imgArea.id = "modal-img-area";
-  imgArea.style.cssText = "width:100%;height:140px;background:#050810;border:1px solid #1a3a5c;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;margin-bottom:12px";
-  imgArea.innerHTML = "<div id='modal-img-placeholder' style='color:#2a3a5a;font-size:13px'>暂无图片</div><div id='modal-img-itemno' style='color:#4cc9f0;font-size:12px;font-weight:bold;margin-top:8px;display:none'></div>";
-  body.insertBefore(imgArea, body.firstChild);
+  // ===== 默认选中第一个有图片的物料 =====
+  var firstWithImg = -1;
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].img && items[i].img !== "" && items[i].img !== "物料图片路径") {
+      firstWithImg = i;
+      break;
+    }
+  }
+  if (firstWithImg === -1) firstWithImg = 0;
+  switchToItem(firstWithImg);
 
   document.getElementById("modalOverlay").classList.add("show");
 }
+
 
 function closeModal(e) {
   if (e && e.target !== e.currentTarget) return;

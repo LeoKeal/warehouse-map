@@ -1088,5 +1088,15 @@ document.addEventListener("keydown", function(e) {
 });
 
 </script>
+<div class="modal-overlay" id="safeAlertOverlay">
+ <div class="modal" style="width:840px;max-height:80vh" onclick="event.stopPropagation()">
+  <div class="modal-header">
+   <h2 id="safeAlertTitle">⚠️ 库存不足明细</h2>
+   <button class="modal-close" onclick="closeSafeAlert()">×</button>
+  </div>
+  <div class="modal-body" id="safeAlertBody" style="padding:12px;gap:0">
+  </div>
+ </div>
+</div>
 </body>
 </html>

@@ -75,7 +75,8 @@
  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
  .tip{text-align:center;font-size:11px;color:#2a3a5a;padding:8px;width:100%}
  .header-actions{display:flex;align-items:center;gap:8px}
- .detail-btn{margin-left:12px;background:#1a0a20;border:1px solid #e74c3c;color:#e74c3c;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-weight:bold;transition:all .2s;vertical-align:middle}
+ .detail-btn-wrap{margin-left:12px;display:inline-block}
+ .detail-btn{background:#1a0a20;border:1px solid #e74c3c;color:#e74c3c;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-weight:bold;transition:all .2s}
  .detail-btn:hover{background:#2a0010;box-shadow:0 0 8px rgba(231,76,60,.2)}
  .detail-btn .badge{display:inline-block;background:#e74c3c;color:#fff;border-radius:10px;font-size:10px;padding:0 5px;margin-left:4px;line-height:16px;min-width:16px;text-align:center}
  .stats-row{display:flex;align-items:center;gap:0;line-height:1}
@@ -97,6 +98,16 @@
  .safe-table .col-itemno{color:#9b59b6;font-size:11px}
  .safe-modal-msg{text-align:center;padding:20px;color:#2a3a5a;font-size:14px}
  .safe-modal-msg.ok{color:#27ae60}
+ .search-table{width:100%;border-collapse:collapse;font-size:12px}
+ .search-table th{background:#0a2040;color:#4cc9f0;padding:8px 10px;text-align:left;font-weight:900;border-bottom:1px solid #1a3a5c;position:sticky;top:0}
+ .search-table td{padding:7px 10px;border-bottom:1px solid #0f1a2e;color:#c0d0e0;vertical-align:middle}
+ .search-table tr:hover td{background:#0a1830;cursor:pointer}
+ .search-table .col-loc{color:#4cc9f0;font-weight:bold;white-space:nowrap}
+ .search-table .col-qty{text-align:right;font-weight:bold}
+ .search-table .col-itemno{color:#9b59b6;font-size:11px}
+ .search-table .truncated{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .search-table .truncated:hover{max-width:none;white-space:normal;word-break:break-all}
+ .search-hl{background:#1a3a00;color:#a8e6cf;border-radius:2px;padding:0 1px;font-weight:bold}
  .empty-board-icon{font-size:64px;opacity:.3}
  .data-info{color:#4cc9f0;font-size:12px;background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 16px;margin-top:4px}
  </style>
@@ -113,8 +124,9 @@
  </div>
  <div class="stats stats-row">
    总库位 <span id="s-total">0</span> · 已占用 <span id="s-occ" style="color:#27ae60">0</span> · 空闲 <span id="s-empty" style="color:#4a6080">0</span> · 库存告警 <span id="s-alert" style="color:#e74c3c">0</span>
-   <button class="detail-btn" id="safeAlertBtn" onclick="showSafeAlertModal()">明细 <span id="safeAlertBadge" class="badge"></span></button>
+   <div class="detail-btn-wrap"><button class="detail-btn" id="safeAlertBtn" onclick="showSafeAlertModal()">明细 <span id="safeAlertBadge" class="badge"></span></button></div>
  </div>
+ <button class="header-btn" onclick="showSearchModal()">🔍 查询</button>
  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
 </header>
 <div class="main">
@@ -143,13 +155,19 @@
  </div>
 </div>
 <div class="toast" id="toast"></div>
-<div class="modal-overlay" id="safeAlertOverlay" onclick="closeSafeAlert(event)">
- <div class="modal" style="width:840px;max-height:80vh" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="searchOverlay">
+ <div class="modal" style="width:900px;max-height:85vh" onclick="event.stopPropagation()">
   <div class="modal-header">
-   <h2 id="safeAlertTitle">⚠️ 库存不足明细</h2>
-   <button class="modal-close" onclick="closeSafeAlert()">×</button>
+   <h2>🔍 库位查询</h2>
+   <button class="modal-close" onclick="closeSearch()">×</button>
   </div>
-  <div class="modal-body" id="safeAlertBody" style="padding:12px;gap:0">
+  <div class="modal-body" style="padding:14px;gap:10px">
+   <div style="display:flex;gap:8px;align-items:center">
+    <input type="text" id="searchInput" placeholder="输入料号/品名/规格/库位/备注..." style="flex:1;background:#0a2040;border:1px solid #1a3a5c;color:#4cc9f0;padding:8px 12px;border-radius:8px;font-size:13px;outline:none" oninput="onSearchInput()" onkeydown="onSearchKeydown(event)" />
+    <button class="header-btn" style="background:#0a2040" onclick="doSearch(true)">搜索</button>
+   </div>
+   <div id="searchHint" style="text-align:center;font-size:12px;color:#2a3a5a;padding:8px">输入关键词实时搜索，支持料号/品名/规格/库位/备注</div>
+   <div id="searchBody" style="overflow-y:auto;height:460px"></div>
   </div>
  </div>
 </div>
@@ -191,19 +209,21 @@ function getVal(row, candidates, def) {
   return k ? (String(row[k]).trim() || def) : def;
 }
 
-// ===== 库位编码转换：A-2-1 → A-L2-P001 =====
+// ===== 库位编码转换：同时返回原始格式和内部格式 =====
 function convertCode(raw) {
-  if (!raw) return null;
-  var s = String(raw).trim().toUpperCase();
+  if (!raw) return { raw: null, code: null };
+  var s = String(raw).trim();
   var m = s.match(/^([A-Z])-(\d+)-(\d+)$/);
-  if (!m) {
-    if (/^[A-Z]-L\d+-P\d+$/.test(s)) return s;
-    return null;
+  if (m) {
+    var shelf = m[1];
+    var layer = parseInt(m[2]);
+    var pos = parseInt(m[3]);
+    return { raw: s, code: shelf + "-L" + layer + "-P" + String(pos).padStart(3, "0") };
   }
-  var shelf = m[1];
-  var layer = parseInt(m[2]);
-  var pos = parseInt(m[3]);
-  return shelf + "-L" + layer + "-P" + String(pos).padStart(3, "0");
+  if (/^[A-Z]-L\d+-P\d+$/.test(s.toUpperCase())) {
+    return { raw: s, code: s.toUpperCase() };
+  }
+  return { raw: s, code: null };
 }
 
 // ===== 渲染货位色块的状态 =====
@@ -245,8 +265,10 @@ function loadExcel(file) {
 
       for (var i = 0; i < json.length; i++) {
         var row = json[i];
-        var code = convertCode(getVal(row, KEY_CODE, ""));
-        if (!code) continue;
+        var conv = convertCode(getVal(row, KEY_CODE, ""));
+        if (!conv.code) continue;
+        var code = conv.code;
+        var disp = conv.raw;
 
         var qty = parseFloat(getVal(row, KEY_QTY, "0")) || 0;
         var name = getVal(row, KEY_NAME, "");
@@ -273,6 +295,7 @@ function loadExcel(file) {
           var parts = code.split("-");
           DATA[code] = {
             code: code,
+            disp: disp,
             shelf: parts[0],
             layer: parseInt(parts[1].replace("L", "")),
             pos: parseInt(parts[2].replace("P", "")),
@@ -442,7 +465,7 @@ function showLayers(shelf) {
       if (status.cls === "ms-multi") baseCss += "animation:pulse-multi 2s infinite;";
       dot.style.cssText = baseCss;
       dot.textContent = (pnum < 10 ? "0" : "") + pnum;
-      dot.title = loc.code + " " + status.tip;
+      dot.title = (loc.disp || loc.code) + " " + status.tip;
       dot.onclick = (function(l) {
         return function(e) {
           e.stopPropagation();
@@ -492,7 +515,7 @@ function showModal(loc) {
   var body = document.getElementById("modalBody");
   body.innerHTML = "";
 
-  document.getElementById("modalTitle").textContent = "📦 " + loc.code;
+  document.getElementById("modalTitle").textContent = "📦 " + (loc.disp || loc.code);
 
   // ===== 顶部图片区 =====
   var imgArea = document.createElement("div");
@@ -521,7 +544,7 @@ function showModal(loc) {
   var locBar = document.createElement("div");
   locBar.className = "modal-location";
   locBar.style.cssText = "background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:8px 14px;font-size:13px;color:#4cc9f0;font-weight:bold;text-align:center;margin-bottom:4px";
-  locBar.textContent = "📍 " + loc.code;
+  locBar.textContent = "📍 " + (loc.disp || loc.code);
   if (items.length > 1) {
     var badge = document.createElement("span");
     badge.style.cssText = "font-size:11px;color:#9b59b6;font-weight:normal;margin-left:8px";
@@ -667,8 +690,11 @@ function closeModal(e) {
 }
 
 function showSafeAlertModal() {
-  if (Object.keys(DATA).length === 0) { showToast("⚠️ 请先加载数据"); return; }
+  console.log("showSafeAlertModal called");
+  var overlay = document.getElementById("safeAlertOverlay");
   var body = document.getElementById("safeAlertBody");
+  console.log("overlay:", overlay, "body:", body);
+  if (Object.keys(DATA).length === 0) { showToast("⚠️ 请先加载数据"); return; }
   document.getElementById("safeAlertTitle").textContent = "⚠️ 库存不足明细";
 
   // 收集所有低于安全库存的物料
@@ -711,7 +737,7 @@ function showSafeAlertModal() {
       var qty = it.qty || 0;
       var isCrit = qty <= safe * 0.5; // 不足一半=严重
       var levelCls = isCrit ? "crit" : "low";
-      var locStr = loc.shelf + "区 " + loc.layer + "层 " + (loc.pos < 10 ? "00" : loc.pos < 100 ? "0" : "") + loc.pos + "号";
+      var locStr = loc.shelf + "-" + loc.layer + "-" + loc.pos;
       html += '<tr class="' + levelCls + '">' +
         '<td class="col-itemno">' + (it.itemno || "—") + '</td>' +
         '<td>' + it.name + '</td>' +
@@ -818,8 +844,11 @@ document.addEventListener("keydown", function(e) {
           var shelves = new Set();
           for (var i = 0; i < json.length; i++) {
             var row = json[i];
-            var code = row["库位编码"] || row["库位"] || row["code"] || "";
-            if (!code) continue;
+            var rawCode = row["库位编码"] || row["库位"] || row["code"] || "";
+            if (!rawCode) continue;
+            var conv = convertCode(rawCode);
+            if (!conv.code) continue;
+            var code = conv.code;
             var qty = parseFloat(row["数量"] || row["可用量"] || "0") || 0;
             var name = row["物料名称"] || row["品名"] || "";
             var itemno = row["料号"] || "";
@@ -832,7 +861,7 @@ document.addEventListener("keydown", function(e) {
             var layer = parts[1] ? parseInt(parts[1].replace("L", "")) : 1;
             var pos = parts[2] ? parseInt(parts[2].replace("P", "")) : 1;
             if (!DATA[code]) {
-              DATA[code] = { code: code, shelf: shelf, layer: layer, pos: pos, items: [] };
+              DATA[code] = { code: code, disp: conv.raw, shelf: shelf, layer: layer, pos: pos, items: [] };
               shelves.add(shelf);
             }
             var safeQty = parseFloat(row["安全库存"] || "0") || 0;
@@ -858,8 +887,9 @@ document.addEventListener("keydown", function(e) {
         var shelves = new Set();
         for (var i = 0; i < json.length; i++) {
           var row = json[i];
-          var code = convertCode(getVal(row, KEY_CODE, ""));
-          if (!code) continue;
+          var conv = convertCode(getVal(row, KEY_CODE, ""));
+          if (!conv.code) continue;
+          var code = conv.code;
           var item = {
             itemno: getVal(row, KEY_ITEMNO, ""),
             name: getVal(row, KEY_NAME, ""),
@@ -872,8 +902,8 @@ document.addEventListener("keydown", function(e) {
             _raw: row
           };
           if (!DATA[code]) {
-            var parts = code.split("-");
-            DATA[code] = { code: code, shelf: parts[0], layer: parseInt(parts[1].replace("L","")), pos: parseInt(parts[2].replace("P","")), items: [] };
+            var parts = conv.raw.split("-");
+            DATA[code] = { code: code, disp: conv.raw, shelf: parts[0], layer: parseInt(parts[1].replace("L","")), pos: parseInt(parts[2].replace("P","")), items: [] };
             shelves.add(parts[0]);
           }
           DATA[code].items.push(item);
@@ -891,6 +921,186 @@ document.addEventListener("keydown", function(e) {
   };
   xhr.send();
 })();
+
+// ===== 查询弹窗 =====
+var SEARCH_LIMIT = 20;
+var _searchAll = false;
+
+function showSearchModal() {
+  if (Object.keys(DATA).length === 0) { showToast("\u26a0\ufe0f 请先加载数据"); return; }
+  _searchAll = false;
+  document.getElementById("searchInput").value = "";
+  document.getElementById("searchHint").textContent = "输入关键词实时搜索，支持料号/品名/规格/库位/备注";
+  document.getElementById("searchBody").innerHTML = "";
+  document.getElementById("searchOverlay").classList.add("show");
+  document.getElementById("searchInput").focus();
+}
+
+function closeSearch(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById("searchOverlay").classList.remove("show");
+}
+
+function onSearchKeydown(e) {
+  if (e.key === "Enter") { doSearch(true); }
+}
+
+function onSearchInput() {
+  var val = document.getElementById("searchInput").value.trim();
+  if (val === "") {
+    document.getElementById("searchHint").textContent = "输入关键词实时搜索，支持料号/品名/规格/库位/备注";
+    document.getElementById("searchBody").innerHTML = "";
+    return;
+  }
+  doSearch(false);
+}
+
+function doSearch(full) {
+  if (full) _searchAll = true;
+  var val = document.getElementById("searchInput").value.trim();
+  if (!val) return;
+  var kw = val.toLowerCase();
+  var results = [];
+  for (var code in DATA) {
+    var loc = DATA[code];
+    for (var i = 0; i < loc.items.length; i++) {
+      var it = loc.items[i];
+      if (!it.name && it.qty === 0) continue;
+      if (matchItem(it, loc, kw)) {
+        results.push({ loc: loc, it: it });
+      }
+    }
+  }
+  renderSearchResults(results, val);
+}
+
+function matchItem(it, loc, kw) {
+  var fields = [loc.code, it.itemno, it.name, it.spec, it.note];
+  for (var f = 0; f < fields.length; f++) {
+    if (fields[f] && String(fields[f]).toLowerCase().indexOf(kw) !== -1) return true;
+  }
+  return false;
+}
+
+function renderSearchResults(results, rawKw) {
+  var body = document.getElementById("searchBody");
+  var hint = document.getElementById("searchHint");
+  if (results.length === 0) {
+    body.innerHTML = "";
+    hint.textContent = "未找到匹配结果";
+    return;
+  }
+  var limit = _searchAll ? results.length : SEARCH_LIMIT;
+  var shown = results.slice(0, limit);
+  var html = '<table class="search-table"><thead><tr>' +
+    '<th>库位</th><th>料号</th><th>品名</th><th>规格</th><th style="text-align:right">数量</th><th style="text-align:right">安全库存</th>' +
+  '</tr></thead><tbody>';
+  for (var i = 0; i < shown.length; i++) {
+    var row = shown[i];
+    var it = row.it;
+    var loc = row.loc;
+    var locStr = loc.shelf + "-" + loc.layer + "-" + loc.pos;
+    var unit = it.unit || "";
+    var safe = it.safeQty || 0;
+    var qtyStyle = (it.qty > 0 && safe > 0 && it.qty < safe)
+      ? (it.qty <= safe * 0.5 ? 'color:#e74c3c' : 'color:#f39c12')
+      : '';
+    html += '<tr onclick="navigateToLoc(\'' + loc.code + '\')">' +
+      '<td class="col-loc">' + locStr + '</td>' +
+      '<td class="col-itemno">' + hl(it.itemno || "\u2014", rawKw) + '</td>' +
+      '<td class="truncated">' + hl(it.name || "\u2014", rawKw) + '</td>' +
+      '<td class="truncated">' + hl(it.spec || "\u2014", rawKw) + '</td>' +
+      '<td class="col-qty"' + (qtyStyle ? ' style="' + qtyStyle + '"' : '') + '>' + it.qty + (unit ? " " + unit : "") + '</td>' +
+      '<td style="text-align:right;color:#888">' + (safe > 0 ? safe : '—') + '</td>' +
+    '</tr>';
+  }
+  html += '</tbody></table>';
+  body.innerHTML = html;
+  if (_searchAll && results.length > SEARCH_LIMIT) {
+    hint.innerHTML = '共 <span style="color:#4cc9f0">' + results.length + '</span> 条，已显示全部';
+  } else if (results.length > SEARCH_LIMIT) {
+    hint.innerHTML = '共 <span style="color:#4cc9f0">' + results.length + '</span> 条，默认显示前 <span style="color:#4cc9f0">' + SEARCH_LIMIT + '</span> 条，回车显示全部';
+  } else {
+    hint.textContent = '共 ' + results.length + ' 条匹配结果';
+  }
+}
+
+function hl(text, kw) {
+  if (!kw || !text) return text;
+  var idx = text.toLowerCase().indexOf(kw.toLowerCase());
+  if (idx === -1) return text;
+  return text.substring(0, idx) + '<span class="search-hl">' + text.substring(idx, idx + kw.length) + '</span>' + text.substring(idx + kw.length);
+}
+
+function navigateToLoc(code) {
+  closeSearch();
+  var loc = DATA[code];
+  if (!loc) return;
+  // 展开目标货架的层卡片
+  showLayers(loc.shelf);
+  setTimeout(function() {
+    // 找到对应的层卡片并展开
+    var cards = document.querySelectorAll(".layer-card");
+    for (var ci = 0; ci < cards.length; ci++) {
+      var title = cards[ci].querySelector(".layer-card-title");
+      if (title && title.textContent.indexOf("第 " + loc.layer + " 层") !== -1) {
+        cards[ci]._grid.style.display = "flex";
+        cards[ci]._arrow.textContent = "\u25bc";
+        break;
+      }
+    }
+    // 直接打开货位详情弹窗
+    showModal(loc);
+  }, 100);
+}
+
+function scrollToLayerCard(layer) {
+  var cards = document.querySelectorAll(".layer-card");
+  for (var i = 0; i < cards.length; i++) {
+    var title = cards[i].querySelector(".layer-card-title");
+    if (title && title.textContent.indexOf("第 " + layer + " 层") !== -1) {
+      cards[i].scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+  }
+}
+
+function highlightSlot(loc) {
+  var dots = document.querySelectorAll(".pos-dot");
+  for (var i = 0; i < dots.length; i++) {
+    var title = dots[i].title || "";
+    // 同时匹配disp(原始格式如A-1-7)和code(内部格式如A-L1-P007)
+    var searchKey = loc.disp || loc.code;
+    if (title.indexOf(searchKey) === 0) {
+      var el = dots[i];
+      el.style.boxShadow = "0 0 16px 4px #4cc9f0";
+      el.style.zIndex = "10";
+      el.style.transform = "scale(1.3)";
+      setTimeout(function() {
+        el.style.boxShadow = "";
+        el.style.zIndex = "";
+        el.style.transform = "";
+      }, 3000);
+      return;
+    }
+  }
+}
+
+// ===== ESC 关闭搜索弹窗 =====
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") { closeModal(); closeSafeAlert(); closeSearch(); }
+});
+
 </script>
+<div class="modal-overlay" id="safeAlertOverlay">
+ <div class="modal" style="width:840px;max-height:80vh" onclick="event.stopPropagation()">
+  <div class="modal-header">
+   <h2 id="safeAlertTitle">⚠️ 库存不足明细</h2>
+   <button class="modal-close" onclick="closeSafeAlert()">×</button>
+  </div>
+  <div class="modal-body" id="safeAlertBody" style="padding:12px;gap:0">
+  </div>
+ </div>
+</div>
 </body>
 </html>

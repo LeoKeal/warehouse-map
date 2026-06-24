@@ -140,7 +140,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <div class="modal-overlay" id="safeAlertOverlay" onclick="closeSafeAlert(event)">
- <div class="modal" style="width:700px" onclick="event.stopPropagation()">
+ <div class="modal" style="width:840px;max-height:80vh" onclick="event.stopPropagation()">
   <div class="modal-header">
    <h2 id="safeAlertTitle">⚠️ 库存不足明细</h2>
    <button class="modal-close" onclick="closeSafeAlert()">×</button>
@@ -168,8 +168,17 @@ var DATA = {};
 
 // ===== 字段查找工具 =====
 function findKey(row, candidates) {
+  // 1. 先精确匹配
   for (var k of candidates) {
     if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== "") return k;
+  }
+  // 2. 模糊匹配：忽略所有空格、大小写
+  var norm = function(s) { return String(s).replace(/\s+/g, "").toLowerCase(); };
+  var candNorm = {};
+  for (var ci = 0; ci < candidates.length; ci++) candNorm[norm(candidates[ci])] = candidates[ci];
+  for (var rk in row) {
+    var n = norm(rk);
+    if (candNorm[n] && row[rk] !== undefined && row[rk] !== null && String(row[rk]).trim() !== "") return candNorm[n];
   }
   return null;
 }
@@ -687,8 +696,8 @@ function showSafeAlertModal() {
         '<th>品名</th>' +
         '<th>规格</th>' +
         '<th>位置</th>' +
-        '<th style="text-align:right">现有库存</th>' +
-        '<th style="text-align:right">安全库存</th>' +
+        '<th style="text-align:right;min-width:80px">现有库存</th>' +
+        '<th style="text-align:right;min-width:80px">安全库存</th>' +
       '</tr></thead><tbody>';
     for (var j = 0; j < below.length; j++) {
       var row = below[j];

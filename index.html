@@ -74,7 +74,25 @@
  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0d1f38;border:2px solid #4cc9f0;color:#4cc9f0;padding:8px 22px;border-radius:10px;font-size:13px;opacity:0;transition:all .35s;pointer-events:none;z-index:9999}
  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
  .tip{text-align:center;font-size:11px;color:#2a3a5a;padding:8px;width:100%}
- .empty-board{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#2a3a5a;font-size:14px;text-align:center}
+ .header-actions{display:flex;align-items:center;gap:8px}
+ .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:bold;transition:all .2s;white-space:nowrap}
+ .header-btn:hover{background:#0a2040;box-shadow:0 0 10px rgba(76,201,240,.25)}
+ .header-btn.warn{color:#f39c12;border-color:#f39c12}
+ .header-btn.warn:hover{background:#2a2000;box-shadow:0 0 10px rgba(243,156,18,.25)}
+ .header-btn.warn.has-alert{color:#e74c3c;border-color:#e74c3c;animation:btn-blink 2s infinite}
+ @keyframes btn-blink{0%,100%{opacity:1}50%{opacity:.7}}
+ .safe-table{width:100%;border-collapse:collapse;font-size:12px}
+ .safe-table th{background:#0a2040;color:#4cc9f0;padding:8px 10px;text-align:left;font-weight:900;border-bottom:1px solid #1a3a5c;position:sticky;top:0}
+ .safe-table td{padding:8px 10px;border-bottom:1px solid #0f1a2e;color:#c0d0e0;vertical-align:middle}
+ .safe-table tr:hover td{background:#0a1830}
+ .safe-table .col-loc{color:#4cc9f0;font-weight:bold;white-space:nowrap}
+ .safe-table .col-qty{text-align:right;font-weight:bold}
+ .safe-table .crit .col-qty{color:#e74c3c}
+ .safe-table .low .col-qty{color:#f39c12}
+ .safe-table .col-safe{color:#888;text-align:right}
+ .safe-table .col-itemno{color:#9b59b6;font-size:11px}
+ .safe-modal-msg{text-align:center;padding:20px;color:#2a3a5a;font-size:14px}
+ .safe-modal-msg.ok{color:#27ae60}
  .empty-board-icon{font-size:64px;opacity:.3}
  .data-info{color:#4cc9f0;font-size:12px;background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 16px;margin-top:4px}
  </style>
@@ -90,7 +108,10 @@
    <span class="file-name" id="fileName"></span>
  </div>
  <div class="stats">总库位 <span id="s-total">0</span> · 已占用 <span id="s-occ" style="color:#27ae60">0</span> · 告警 <span id="s-alert" style="color:#e74c3c">0</span></div>
- <button class="btn" onclick="document.getElementById('fileInput').click()">🔄 重新加载</button>
+ <div class="header-actions">
+  <button class="header-btn warn" id="safeAlertBtn" onclick="showSafeAlertModal()">⚠️ 库存不足明细</button>
+  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 重新加载</button>
+ </div>
 </header>
 <div class="main">
  <div class="board" id="board">
@@ -118,6 +139,16 @@
  </div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="modal-overlay" id="safeAlertOverlay" onclick="closeSafeAlert(event)">
+ <div class="modal" style="width:700px" onclick="event.stopPropagation()">
+  <div class="modal-header">
+   <h2 id="safeAlertTitle">⚠️ 库存不足明细</h2>
+   <button class="modal-close" onclick="closeSafeAlert()">×</button>
+  </div>
+  <div class="modal-body" id="safeAlertBody" style="padding:12px;gap:0">
+  </div>
+ </div>
+</div>
 <script>
 // ===== 字段名兼容列表（Excel表头可能的不同命名）=====
 var KEY_CODE = ["库位", "库位编码", "货位", "库位编号", "位置"];
@@ -209,12 +240,14 @@ function loadExcel(file) {
         var spec = getVal(row, KEY_SPEC, "");
         var img = getVal(row, KEY_IMG, "");
         var note = getVal(row, KEY_NOTE, "");
+        var safeQty = parseFloat(getVal(row, KEY_SAFE, "0")) || 0;
 
         var item = {
           itemno: itemno,
           name: name,
           spec: spec,
           qty: qty,
+          safeQty: safeQty,
           img: img,
           note: note,
           _raw: row
@@ -242,6 +275,7 @@ function loadExcel(file) {
 
       renderBoard(shelfList);
       updateStats();
+      updateSafeAlertBtn();
       showToast("✅ 加载成功 " + totalSlots + " 货位/" + totalItems + " 物料 (" + file.name + ")");
     } catch(err) {
       showToast("❌ 解析失败：" + err.message);
@@ -616,6 +650,87 @@ function closeModal(e) {
   document.getElementById("modalOverlay").classList.remove("show");
 }
 
+function showSafeAlertModal() {
+  if (Object.keys(DATA).length === 0) { showToast("⚠️ 请先加载数据"); return; }
+  var body = document.getElementById("safeAlertBody");
+  document.getElementById("safeAlertTitle").textContent = "⚠️ 库存不足明细";
+
+  // 收集所有低于安全库存的物料
+  var below = [];
+  for (var k in DATA) {
+    var loc = DATA[k];
+    for (var i = 0; i < loc.items.length; i++) {
+      var it = loc.items[i];
+      if (!it.name || it.qty === 0) continue;
+      var safe = it.safeQty || 0;
+      if (safe > 0 && it.qty < safe) {
+        below.push({
+          loc: loc,
+          it: it,
+          deficit: safe - it.qty
+        });
+      }
+    }
+  }
+
+  if (below.length === 0) {
+    body.innerHTML = '<div class="safe-modal-msg ok">✅ 所有物料均高于安全库存，无告警</div>';
+  } else {
+    // 按缺口大小降序
+    below.sort(function(a, b) { return b.deficit - a.deficit; });
+    var html = '<table class="safe-table">' +
+      '<thead><tr>' +
+        '<th>料号</th>' +
+        '<th>品名</th>' +
+        '<th>规格</th>' +
+        '<th>位置</th>' +
+        '<th style="text-align:right">现有库存</th>' +
+        '<th style="text-align:right">安全库存</th>' +
+      '</tr></thead><tbody>';
+    for (var j = 0; j < below.length; j++) {
+      var row = below[j];
+      var it = row.it;
+      var loc = row.loc;
+      var safe = it.safeQty || 0;
+      var qty = it.qty || 0;
+      var isCrit = qty <= safe * 0.5; // 不足一半=严重
+      var levelCls = isCrit ? "crit" : "low";
+      var locStr = loc.shelf + "区 " + loc.layer + "层 " + (loc.pos < 10 ? "00" : loc.pos < 100 ? "0" : "") + loc.pos + "号";
+      html += '<tr class="' + levelCls + '">' +
+        '<td class="col-itemno">' + (it.itemno || "—") + '</td>' +
+        '<td>' + it.name + '</td>' +
+        '<td style="color:#888">' + (it.spec || "—") + '</td>' +
+        '<td class="col-loc">' + locStr + '</td>' +
+        '<td class="col-qty">' + qty + ' ' + (it._raw && it._raw["单位"] ? it._raw["单位"] : "") + '</td>' +
+        '<td class="col-safe">' + safe + '</td>' +
+      '</tr>';
+    }
+    html += '</tbody></table>';
+    body.innerHTML = html;
+  }
+
+  document.getElementById("safeAlertOverlay").classList.add("show");
+}
+
+function closeSafeAlert(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById("safeAlertOverlay").classList.remove("show");
+}
+
+function updateSafeAlertBtn() {
+  var count = 0;
+  for (var k in DATA) {
+    for (var i = 0; i < DATA[k].items.length; i++) {
+      var it = DATA[k].items[i];
+      if (it.name && it.qty > 0 && (it.safeQty || 0) > 0 && it.qty < it.safeQty) count++;
+    }
+  }
+  var btn = document.getElementById("safeAlertBtn");
+  btn.textContent = "⚠️ 库存不足明细" + (count > 0 ? " (" + count + ")" : "");
+  if (count > 0) btn.classList.add("has-alert");
+  else btn.classList.remove("has-alert");
+}
+
 // ===== 更新统计 =====
 // 统计对象：
 //   货位：至少有1个物料且有库存
@@ -661,7 +776,7 @@ document.getElementById("fileInput").addEventListener("change", function(e) {
 });
 
 document.addEventListener("keydown", function(e) {
-  if (e.key === "Escape") closeModal();
+  if (e.key === "Escape") { closeModal(); closeSafeAlert(); }
 });
 
 // ===== 自动检测本地 data.xlsx / data.json =====
@@ -706,6 +821,7 @@ document.addEventListener("keydown", function(e) {
           document.getElementById("fileName").textContent = "data.json (已自动加载)";
           renderBoard(shelfList);
           updateStats();
+          updateSafeAlertBtn();
           showToast("✅ 自动加载 data.json，共 " + Object.keys(DATA).length + " 货位");
         } catch(e) { console.log("json 解析失败:", e.message); }
       }
@@ -743,6 +859,7 @@ document.addEventListener("keydown", function(e) {
         document.getElementById("fileName").textContent = "data.xlsx (已自动加载)";
         renderBoard(shelfList);
         updateStats();
+        updateSafeAlertBtn();
         showToast("✅ 自动加载 data.xlsx，共 " + Object.keys(DATA).length + " 货位");
       } catch(e) { console.log("xlsx 解析失败:", e.message); }
     } else {

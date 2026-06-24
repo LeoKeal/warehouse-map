@@ -156,6 +156,7 @@ var KEY_ITEMNO = ["料号", "物料编号", "编码", "SKU", "商品编号"];
 var KEY_NAME = ["品名", "物料名称", "名称", "商品名称"];
 var KEY_SPEC = ["规格", "规格型号", "型号"];
 var KEY_QTY = ["可用量", "库存量", "数量", "可用库存", "当前库存"];
+var KEY_UNIT = ["单位", "计量单位", "UNIT", "单位(盒/根/个等)"];
 var KEY_IMG = ["图片", "物料图片", "图片路径", "照片", "图片URL"];
 var KEY_SAFE = ["安全库存", "安全库存量", "安全量", "最低库存", "最低库存量"];
 var KEY_NOTE = ["备注", "备注信息", "说明"];
@@ -238,6 +239,7 @@ function loadExcel(file) {
         var name = getVal(row, KEY_NAME, "");
         var itemno = getVal(row, KEY_ITEMNO, "");
         var spec = getVal(row, KEY_SPEC, "");
+        var unit = getVal(row, KEY_UNIT, "");
         var img = getVal(row, KEY_IMG, "");
         var note = getVal(row, KEY_NOTE, "");
         var safeQty = parseFloat(getVal(row, KEY_SAFE, "0")) || 0;
@@ -247,6 +249,7 @@ function loadExcel(file) {
           name: name,
           spec: spec,
           qty: qty,
+          unit: unit,
           safeQty: safeQty,
           img: img,
           note: note,
@@ -593,7 +596,7 @@ function showModal(loc) {
     else if (q <= 50) qtyEl.style.cssText += "background:#2a2000;color:#f4d03f";
     else qtyEl.style.cssText += "background:#0a2040;color:#27ae60";
     qtyEl.textContent = empty ? "空" : q;
-    if (!empty && it._raw && it._raw["单位"]) qtyEl.textContent += " " + it._raw["单位"];
+    if (!empty && it.unit) qtyEl.textContent += " " + it.unit;
 
     header.appendChild(nameEl);
     header.appendChild(qtyEl);
@@ -701,7 +704,7 @@ function showSafeAlertModal() {
         '<td>' + it.name + '</td>' +
         '<td style="color:#888">' + (it.spec || "—") + '</td>' +
         '<td class="col-loc">' + locStr + '</td>' +
-        '<td class="col-qty">' + qty + ' ' + (it._raw && it._raw["单位"] ? it._raw["单位"] : "") + '</td>' +
+        '<td class="col-qty">' + qty + (it.unit ? ' ' + it.unit : '') + '</td>' +
         '<td class="col-safe">' + safe + '</td>' +
       '</tr>';
     }
@@ -815,7 +818,7 @@ document.addEventListener("keydown", function(e) {
               shelves.add(shelf);
             }
             var safeQty = parseFloat(row["安全库存"] || "0") || 0;
-            DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, safeQty: safeQty, img: itemno ? "images/" + itemno + ".jpg" : "", note: note, _raw: { "单位": unit } });
+            DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, unit: unit, safeQty: safeQty, img: itemno ? "images/" + itemno + ".jpg" : "", note: note, _raw: { "单位": unit } });
           }
           var shelfList = Array.from(shelves).sort();
           document.getElementById("fileName").textContent = "data.json (已自动加载)";
@@ -844,6 +847,8 @@ document.addEventListener("keydown", function(e) {
             name: getVal(row, KEY_NAME, ""),
             spec: getVal(row, KEY_SPEC, ""),
             qty: parseFloat(getVal(row, KEY_QTY, "0")) || 0,
+            unit: getVal(row, KEY_UNIT, ""),
+            safeQty: parseFloat(getVal(row, KEY_SAFE, "0")) || 0,
             img: getVal(row, KEY_IMG, ""),
             note: getVal(row, KEY_NOTE, ""),
             _raw: row

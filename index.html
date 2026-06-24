@@ -75,6 +75,9 @@
  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
  .tip{text-align:center;font-size:11px;color:#2a3a5a;padding:8px;width:100%}
  .header-actions{display:flex;align-items:center;gap:8px}
+ .detail-btn{margin-left:12px;background:#1a0a20;border:1px solid #e74c3c;color:#e74c3c;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-weight:bold;transition:all .2s;vertical-align:middle}
+ .detail-btn:hover{background:#2a0010;box-shadow:0 0 8px rgba(231,76,60,.2)}
+ .detail-btn .badge{display:inline-block;background:#e74c3c;color:#fff;border-radius:10px;font-size:10px;padding:0 5px;margin-left:4px;line-height:16px;min-width:16px;text-align:center}
  .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:bold;transition:all .2s;white-space:nowrap}
  .header-btn:hover{background:#0a2040;box-shadow:0 0 10px rgba(76,201,240,.25)}
  .header-btn.warn{color:#f39c12;border-color:#f39c12}
@@ -107,11 +110,11 @@
    </label>
    <span class="file-name" id="fileName"></span>
  </div>
- <div class="stats">总库位 <span id="s-total">0</span> · 已占用 <span id="s-occ" style="color:#27ae60">0</span> · 告警 <span id="s-alert" style="color:#e74c3c">0</span></div>
- <div class="header-actions">
-  <button class="header-btn warn" id="safeAlertBtn" onclick="showSafeAlertModal()">⚠️ 库存不足明细</button>
-  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 重新加载</button>
+ <div class="stats">
+   总库位 <span id="s-total">0</span> · 已占用 <span id="s-occ" style="color:#27ae60">0</span> · 告警 <span id="s-alert" style="color:#e74c3c">0</span>
+   <button class="detail-btn" id="safeAlertBtn" onclick="showSafeAlertModal()">明细 <span id="safeAlertBadge" class="badge"></span></button>
  </div>
+ <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
 </header>
 <div class="main">
  <div class="board" id="board">
@@ -737,10 +740,14 @@ function updateSafeAlertBtn() {
       if (it.name && it.qty > 0 && (it.safeQty || 0) > 0 && it.qty < it.safeQty) count++;
     }
   }
-  var btn = document.getElementById("safeAlertBtn");
-  btn.textContent = "⚠️ 库存不足明细" + (count > 0 ? " (" + count + ")" : "");
-  if (count > 0) btn.classList.add("has-alert");
-  else btn.classList.remove("has-alert");
+  var badge = document.getElementById("safeAlertBadge");
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = "inline-block";
+  } else {
+    badge.textContent = "";
+    badge.style.display = "none";
+  }
 }
 
 // ===== 更新统计 =====

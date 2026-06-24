@@ -1046,9 +1046,7 @@ function navigateToLoc(code) {
       }
     }
     // 直接打开货位详情弹窗
-    if (loc.items.length === 1) {
-      showModal(loc);
-    }
+    showModal(loc);
   }, 100);
 }
 
@@ -1067,7 +1065,9 @@ function highlightSlot(loc) {
   var dots = document.querySelectorAll(".pos-dot");
   for (var i = 0; i < dots.length; i++) {
     var title = dots[i].title || "";
-    if (title.indexOf(loc.code) === 0) {
+    // 同时匹配disp(原始格式如A-1-7)和code(内部格式如A-L1-P007)
+    var searchKey = loc.disp || loc.code;
+    if (title.indexOf(searchKey) === 0) {
       var el = dots[i];
       el.style.boxShadow = "0 0 16px 4px #4cc9f0";
       el.style.zIndex = "10";

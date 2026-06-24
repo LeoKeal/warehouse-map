@@ -208,19 +208,21 @@ function getVal(row, candidates, def) {
   return k ? (String(row[k]).trim() || def) : def;
 }
 
-// ===== 库位编码转换：A-2-1 → A-L2-P001 =====
+// ===== 库位编码转换：同时返回原始格式和内部格式 =====
 function convertCode(raw) {
-  if (!raw) return null;
-  var s = String(raw).trim().toUpperCase();
+  if (!raw) return { raw: null, code: null };
+  var s = String(raw).trim();
   var m = s.match(/^([A-Z])-(\d+)-(\d+)$/);
-  if (!m) {
-    if (/^[A-Z]-L\d+-P\d+$/.test(s)) return s;
-    return null;
+  if (m) {
+    var shelf = m[1];
+    var layer = parseInt(m[2]);
+    var pos = parseInt(m[3]);
+    return { raw: s, code: shelf + "-L" + layer + "-P" + String(pos).padStart(3, "0") };
   }
-  var shelf = m[1];
-  var layer = parseInt(m[2]);
-  var pos = parseInt(m[3]);
-  return shelf + "-L" + layer + "-P" + String(pos).padStart(3, "0");
+  if (/^[A-Z]-L\d+-P\d+$/.test(s.toUpperCase())) {
+    return { raw: s, code: s.toUpperCase() };
+  }
+  return { raw: s, code: null };
 }
 
 // ===== 渲染货位色块的状态 =====
@@ -262,8 +264,10 @@ function loadExcel(file) {
 
       for (var i = 0; i < json.length; i++) {
         var row = json[i];
-        var code = convertCode(getVal(row, KEY_CODE, ""));
-        if (!code) continue;
+        var conv = convertCode(getVal(row, KEY_CODE, ""));
+        if (!conv.code) continue;
+        var code = conv.code;
+        var disp = conv.raw;
 
         var qty = parseFloat(getVal(row, KEY_QTY, "0")) || 0;
         var name = getVal(row, KEY_NAME, "");
@@ -290,6 +294,7 @@ function loadExcel(file) {
           var parts = code.split("-");
           DATA[code] = {
             code: code,
+            disp: disp,
             shelf: parts[0],
             layer: parseInt(parts[1].replace("L", "")),
             pos: parseInt(parts[2].replace("P", "")),
@@ -459,7 +464,7 @@ function showLayers(shelf) {
       if (status.cls === "ms-multi") baseCss += "animation:pulse-multi 2s infinite;";
       dot.style.cssText = baseCss;
       dot.textContent = (pnum < 10 ? "0" : "") + pnum;
-      dot.title = loc.code + " " + status.tip;
+      dot.title = (loc.disp || loc.code) + " " + status.tip;
       dot.onclick = (function(l) {
         return function(e) {
           e.stopPropagation();
@@ -509,7 +514,7 @@ function showModal(loc) {
   var body = document.getElementById("modalBody");
   body.innerHTML = "";
 
-  document.getElementById("modalTitle").textContent = "📦 " + loc.code;
+  document.getElementById("modalTitle").textContent = "📦 " + (loc.disp || loc.code);
 
   // ===== 顶部图片区 =====
   var imgArea = document.createElement("div");
@@ -538,7 +543,7 @@ function showModal(loc) {
   var locBar = document.createElement("div");
   locBar.className = "modal-location";
   locBar.style.cssText = "background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:8px 14px;font-size:13px;color:#4cc9f0;font-weight:bold;text-align:center;margin-bottom:4px";
-  locBar.textContent = "📍 " + loc.code;
+  locBar.textContent = "📍 " + (loc.disp || loc.code);
   if (items.length > 1) {
     var badge = document.createElement("span");
     badge.style.cssText = "font-size:11px;color:#9b59b6;font-weight:normal;margin-left:8px";
@@ -835,8 +840,11 @@ document.addEventListener("keydown", function(e) {
           var shelves = new Set();
           for (var i = 0; i < json.length; i++) {
             var row = json[i];
-            var code = row["库位编码"] || row["库位"] || row["code"] || "";
-            if (!code) continue;
+            var rawCode = row["库位编码"] || row["库位"] || row["code"] || "";
+            if (!rawCode) continue;
+            var conv = convertCode(rawCode);
+            if (!conv.code) continue;
+            var code = conv.code;
             var qty = parseFloat(row["数量"] || row["可用量"] || "0") || 0;
             var name = row["物料名称"] || row["品名"] || "";
             var itemno = row["料号"] || "";
@@ -849,7 +857,7 @@ document.addEventListener("keydown", function(e) {
             var layer = parts[1] ? parseInt(parts[1].replace("L", "")) : 1;
             var pos = parts[2] ? parseInt(parts[2].replace("P", "")) : 1;
             if (!DATA[code]) {
-              DATA[code] = { code: code, shelf: shelf, layer: layer, pos: pos, items: [] };
+              DATA[code] = { code: code, disp: conv.raw, shelf: shelf, layer: layer, pos: pos, items: [] };
               shelves.add(shelf);
             }
             var safeQty = parseFloat(row["安全库存"] || "0") || 0;
@@ -875,8 +883,9 @@ document.addEventListener("keydown", function(e) {
         var shelves = new Set();
         for (var i = 0; i < json.length; i++) {
           var row = json[i];
-          var code = convertCode(getVal(row, KEY_CODE, ""));
-          if (!code) continue;
+          var conv = convertCode(getVal(row, KEY_CODE, ""));
+          if (!conv.code) continue;
+          var code = conv.code;
           var item = {
             itemno: getVal(row, KEY_ITEMNO, ""),
             name: getVal(row, KEY_NAME, ""),
@@ -889,8 +898,8 @@ document.addEventListener("keydown", function(e) {
             _raw: row
           };
           if (!DATA[code]) {
-            var parts = code.split("-");
-            DATA[code] = { code: code, shelf: parts[0], layer: parseInt(parts[1].replace("L","")), pos: parseInt(parts[2].replace("P","")), items: [] };
+            var parts = conv.raw.split("-");
+            DATA[code] = { code: code, disp: conv.raw, shelf: parts[0], layer: parseInt(parts[1].replace("L","")), pos: parseInt(parts[2].replace("P","")), items: [] };
             shelves.add(parts[0]);
           }
           DATA[code].items.push(item);

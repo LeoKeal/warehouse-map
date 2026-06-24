@@ -154,7 +154,7 @@
  </div>
 </div>
 <div class="toast" id="toast"></div>
-<div class="modal-overlay" id="searchOverlay" onclick="closeSearch(event)">
+<div class="modal-overlay" id="searchOverlay">
  <div class="modal" style="width:900px;max-height:85vh" onclick="event.stopPropagation()">
   <div class="modal-header">
    <h2>🔍 库位查询</h2>
@@ -166,7 +166,7 @@
     <button class="header-btn" style="background:#0a2040" onclick="doSearch(true)">搜索</button>
    </div>
    <div id="searchHint" style="text-align:center;font-size:12px;color:#2a3a5a;padding:8px">输入关键词实时搜索，支持料号/品名/规格/库位/备注</div>
-   <div id="searchBody" style="overflow-y:auto;max-height:60vh"></div>
+   <div id="searchBody" style="overflow-y:auto;height:460px"></div>
   </div>
  </div>
 </div>
@@ -728,7 +728,7 @@ function showSafeAlertModal() {
       var qty = it.qty || 0;
       var isCrit = qty <= safe * 0.5; // 不足一半=严重
       var levelCls = isCrit ? "crit" : "low";
-      var locStr = loc.shelf + "区 " + loc.layer + "层 " + (loc.pos < 10 ? "00" : loc.pos < 100 ? "0" : "") + loc.pos + "号";
+      var locStr = loc.shelf + "-" + loc.layer + "-" + loc.pos;
       html += '<tr class="' + levelCls + '">' +
         '<td class="col-itemno">' + (it.itemno || "—") + '</td>' +
         '<td>' + it.name + '</td>' +
@@ -980,13 +980,13 @@ function renderSearchResults(results, rawKw) {
   var limit = _searchAll ? results.length : SEARCH_LIMIT;
   var shown = results.slice(0, limit);
   var html = '<table class="search-table"><thead><tr>' +
-    '<th>库位</th><th>料号</th><th>品名</th><th>规格</th><th style="text-align:right">数量</th><th>备注</th>' +
+    '<th>库位</th><th>料号</th><th>品名</th><th>规格</th><th style="text-align:right">数量</th><th style="text-align:right">安全库存</th>' +
   '</tr></thead><tbody>';
   for (var i = 0; i < shown.length; i++) {
     var row = shown[i];
     var it = row.it;
     var loc = row.loc;
-    var locStr = loc.shelf + "区 " + loc.layer + "层 " + String(loc.pos).padStart(3, "0") + "号";
+    var locStr = loc.shelf + "-" + loc.layer + "-" + loc.pos;
     var unit = it.unit || "";
     var safe = it.safeQty || 0;
     var qtyStyle = (it.qty > 0 && safe > 0 && it.qty < safe)
@@ -998,7 +998,7 @@ function renderSearchResults(results, rawKw) {
       '<td class="truncated">' + hl(it.name || "\u2014", rawKw) + '</td>' +
       '<td class="truncated">' + hl(it.spec || "\u2014", rawKw) + '</td>' +
       '<td class="col-qty"' + (qtyStyle ? ' style="' + qtyStyle + '"' : '') + '>' + it.qty + (unit ? " " + unit : "") + '</td>' +
-      '<td class="truncated" style="font-size:11px;color:#6a8aaa">' + hl(it.note || "\u2014", rawKw) + '</td>' +
+      '<td style="text-align:right;color:#888">' + (safe > 0 ? safe : '—') + '</td>' +
     '</tr>';
   }
   html += '</tbody></table>';
@@ -1023,11 +1023,24 @@ function navigateToLoc(code) {
   closeSearch();
   var loc = DATA[code];
   if (!loc) return;
+  // 展开目标货架的层卡片
   showLayers(loc.shelf);
   setTimeout(function() {
-    scrollToLayerCard(loc.layer);
-    highlightSlot(loc);
-  }, 150);
+    // 找到对应的层卡片并展开
+    var cards = document.querySelectorAll(".layer-card");
+    for (var ci = 0; ci < cards.length; ci++) {
+      var title = cards[ci].querySelector(".layer-card-title");
+      if (title && title.textContent.indexOf("第 " + loc.layer + " 层") !== -1) {
+        cards[ci]._grid.style.display = "flex";
+        cards[ci]._arrow.textContent = "\u25bc";
+        break;
+      }
+    }
+    // 直接打开货位详情弹窗
+    if (loc.items.length === 1) {
+      showModal(loc);
+    }
+  }, 100);
 }
 
 function scrollToLayerCard(layer) {

@@ -78,6 +78,7 @@
  .detail-btn{margin-left:12px;background:#1a0a20;border:1px solid #e74c3c;color:#e74c3c;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-weight:bold;transition:all .2s;vertical-align:middle}
  .detail-btn:hover{background:#2a0010;box-shadow:0 0 8px rgba(231,76,60,.2)}
  .detail-btn .badge{display:inline-block;background:#e74c3c;color:#fff;border-radius:10px;font-size:10px;padding:0 5px;margin-left:4px;line-height:16px;min-width:16px;text-align:center}
+ .stats-row{display:flex;align-items:center;gap:0;line-height:1}
  .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:bold;transition:all .2s;white-space:nowrap}
  .header-btn:hover{background:#0a2040;box-shadow:0 0 10px rgba(76,201,240,.25)}
  .header-btn.warn{color:#f39c12;border-color:#f39c12}
@@ -110,8 +111,8 @@
    </label>
    <span class="file-name" id="fileName"></span>
  </div>
- <div class="stats">
-   总库位 <span id="s-total">0</span> · 已占用 <span id="s-occ" style="color:#27ae60">0</span> · 告警 <span id="s-alert" style="color:#e74c3c">0</span>
+ <div class="stats stats-row">
+   总库位 <span id="s-total">0</span> · 已占用 <span id="s-occ" style="color:#27ae60">0</span> · 空闲 <span id="s-empty" style="color:#4a6080">0</span> · 库存告警 <span id="s-alert" style="color:#e74c3c">0</span>
    <button class="detail-btn" id="safeAlertBtn" onclick="showSafeAlertModal()">明细 <span id="safeAlertBadge" class="badge"></span></button>
  </div>
  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
@@ -753,30 +754,31 @@ function updateSafeAlertBtn() {
 // ===== 更新统计 =====
 // 统计对象：
 //   货位：至少有1个物料且有库存
-//   物料总数：有库存的物料行数
-//   告警：库存<=50的物料行数
+//   总库位：所有货位数量
+//   已占用：有物料且qty>0的货位数量
+//   空闲：空货位数量
+//   库存告警：有安全库存且qty<安全库存的物料行数
 function updateStats() {
   var allLocs = Object.keys(DATA).map(function(k) { return DATA[k]; });
   var occupiedLocs = 0;
-  var totalItems = 0;
   var alertItems = 0;
-  var multiLocs = 0;
 
   for (var i = 0; i < allLocs.length; i++) {
     var items = allLocs[i].items;
-    if (items.length > 1) multiLocs++;
     var hasOccupied = items.some(function(it) { return it.name && it.qty > 0; });
     if (hasOccupied) occupiedLocs++;
     for (var j = 0; j < items.length; j++) {
       var it = items[j];
       if (it.name && it.qty > 0) {
-        totalItems++;
-        if (it.qty <= 50) alertItems++;
+        var safe = it.safeQty || 0;
+        if (safe > 0 && it.qty < safe) alertItems++;
       }
     }
   }
+  var emptyLocs = allLocs.length - occupiedLocs;
   document.getElementById("s-total").textContent = allLocs.length;
-  document.getElementById("s-occ").textContent = occupiedLocs + "/" + totalItems + " (多物料:" + multiLocs + ")";
+  document.getElementById("s-occ").textContent = occupiedLocs;
+  document.getElementById("s-empty").textContent = emptyLocs;
   document.getElementById("s-alert").textContent = alertItems;
 }
 

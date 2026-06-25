@@ -324,6 +324,17 @@ function loadExcel(file) {
       console.log("解析完成：", totalSlots, "个货位,", totalItems, "条物料记录, 货架:", shelfList);
 
       renderBoard(shelfList);
+      // 清空右侧面板
+      var list = document.getElementById("layerList");
+      if (list) list.innerHTML = "";
+      var pTitle = document.getElementById("panelTitle");
+      if (pTitle) pTitle.textContent = "📃 库位详情";
+      var pHint = document.getElementById("panelHint");
+      if (pHint) pHint.style.display = "";
+      // 平面图模式下重新渲染（更新颜色）
+      if (_floorViewActive) {
+        renderFloorPlan();
+      }
       updateStats();
       updateSafeAlertBtn();
       showToast("✅ 加载成功 " + totalSlots + " 货位/" + totalItems + " 物料 (" + file.name + ")");
@@ -1044,9 +1055,18 @@ function renderFloorPlan() {
         rect.setAttribute("stroke", stroke);
         rect.setAttribute("stroke-width", "3");
 
+        var clickHandler = function(l) {
+          return function() { showLayers(l); };
+        };
         rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
         rect.addEventListener("mouseover", (function(l, st) { return function(e) { floorTip(e, l, st.total, st.occ, st.crit, st.low); }; })(letter, stats));
         rect.addEventListener("mouseout", floorHideTip);
+        // 文字区域也需要响应点击
+        var fo = svgEl.querySelector("#shelf-" + letter + " foreignObject");
+        if (fo) {
+          fo.style.pointerEvents = "all";
+          fo.addEventListener("click", clickHandler(letter));
+        }
       }
 
       var wrapper = document.createElement("div");

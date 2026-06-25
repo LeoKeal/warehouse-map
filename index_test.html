@@ -1069,9 +1069,6 @@ function renderFloorPlan() {
 
       container.innerHTML = "";
       container.appendChild(wrapper);
-      // 显示平面图容器（页面加载默认显示平面图）
-      container.style.display = "flex";
-      board.style.display = "none";
     })
     .catch(function(err) {
       container.innerHTML = '<div style="color:red;padding:20px;">\u5e73\u9762\u56fe\u52a0\u8f7d\u5931\u8d25: ' + err + '</div>';

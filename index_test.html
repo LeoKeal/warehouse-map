@@ -141,7 +141,6 @@
 </header>
 <div class="main">
  <div class="board" id="board">
-   <div class="floor-plan-container" id="floorPlanContainer" style="display:flex"></div>
    <div class="empty-board" id="emptyBoard">
      <div class="empty-board-icon">📂</div>
      <div>请选择 Excel 数据源文件</div>
@@ -149,6 +148,7 @@
    </div>
    <div class="tip" id="boardTip" style="display:none">👆 点击货架 → 选择层数 → 点击货位查看详情</div>
  </div>
+ <div class="floor-plan-container" id="floorPlanContainer" style="display:none"></div>
  <div class="panel">
    <div class="panel-title" id="panelTitle">📃 库位详情</div>
    <div class="panel-hint" id="panelHint"><div class="panel-hint-icon">👆</div><div>点击左侧货架<br>查看层数和货位</div></div>
@@ -1069,6 +1069,10 @@ function renderFloorPlan() {
 
       container.innerHTML = "";
       container.appendChild(wrapper);
+      // 显示平面图，隐藏货架视图
+      container.style.display = "flex";
+      var board = document.getElementById("board");
+      board.style.display = "none";
     })
     .catch(function(err) {
       container.innerHTML = '<div style="color:red;padding:20px;">\u5e73\u9762\u56fe\u52a0\u8f7d\u5931\u8d25: ' + err + '</div>';
@@ -1099,26 +1103,24 @@ function floorHideTip() {
 
 function toggleView() {
   var board = document.getElementById("board");
-  var shelves = board.querySelectorAll(".shelf");
   var floorCont = document.getElementById("floorPlanContainer");
-  var tip = document.getElementById("boardTip");
   var btn = document.getElementById("viewToggleBtn");
 
   _floorViewActive = !_floorViewActive;
 
   if (_floorViewActive) {
-    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "none";
-    floorCont.style.display = "flex";
-    if (tip) tip.style.display = "none";
-    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
+    // 显示平面图
     renderFloorPlan();
+    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c2\u56fe";
   } else {
-    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "";
+    // 显示货架视图
+    board.style.display = "";
     floorCont.style.display = "none";
-    if (tip) tip.style.display = "block";
     btn.textContent = "\ud83d\udcd0 \u5e73\u9762\u56fe";
   }
 }
+
+
 
 
 // ===== 查询弹窗 =====

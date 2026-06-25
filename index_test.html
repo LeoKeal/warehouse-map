@@ -110,6 +110,15 @@
  .search-hl{background:#1a3a00;color:#a8e6cf;border-radius:2px;padding:0 1px;font-weight:bold}
  .empty-board-icon{font-size:64px;opacity:.3}
  .data-info{color:#4cc9f0;font-size:12px;background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 16px;margin-top:4px}
+ .floor-plan-container{display:flex;flex-direction:column;align-items:center;padding:12px;width:100%;height:100%;overflow:auto}
+ .floor-plan-svg{border-radius:8px;border:2px solid #1a3a5c;background:#0d1f38;cursor:pointer}
+ .floor-shelf{cursor:pointer}
+ .floor-label{font-family:Microsoft YaHei,sans-serif;font-weight:bold;fill:#ffffff;pointer-events:none;font-size:20px}
+ .floor-label.empty{fill:#4a6080}
+ .floor-hint{color:#4a6080;font-size:12px;margin-top:8px;text-align:center}
+ .floor-tip{position:absolute;background:rgba(13,31,56,.95);border:1px solid #1a3a5c;color:#ffffff;font-size:12px;padding:6px 12px;border-radius:6px;pointer-events:none;display:none;z-index:1000;white-space:nowrap}
+ .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;margin-left:8px}
+ .header-btn:hover{background:#0a2040;box-shadow:0 0 12px rgba(76,201,240,.3)}
  </style>
 </head>
 <body>
@@ -127,10 +136,12 @@
    <div class="detail-btn-wrap"><button class="detail-btn" id="safeAlertBtn" onclick="showSafeAlertModal()">明细 <span id="safeAlertBadge" class="badge"></span></button></div>
  </div>
  <button class="header-btn" onclick="showSearchModal()">🔍 查询</button>
+ <button class="header-btn" onclick="toggleView()" id="viewToggleBtn">📐 平面图</button>
  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
 </header>
 <div class="main">
  <div class="board" id="board">
+   <div class="floor-plan-container" id="floorPlanContainer" style="display:none"></div>
    <div class="empty-board" id="emptyBoard">
      <div class="empty-board-icon">📂</div>
      <div>请选择 Excel 数据源文件</div>
@@ -921,6 +932,211 @@ document.addEventListener("keydown", function(e) {
   };
   xhr.send();
 })();
+
+// ===== 平面图配置（从map.svg解析）=====
+var FLOOR_CONFIG = {
+  "svg_w": 1481,
+  "svg_h": 726,
+  "svg_file": "map.svg",
+  "shelves": {
+    "C": {"x":0,"y":0,"w":480,"h":60,"orient":"h"},
+    "D": {"x":480,"y":0,"w":320,"h":60,"orient":"h"},
+    "B": {"x":0,"y":80,"w":60,"h":640,"orient":"v"},
+    "F": {"x":140,"y":140,"w":60,"h":440,"orient":"v"},
+    "G": {"x":200,"y":140,"w":60,"h":440,"orient":"v"},
+    "I": {"x":410,"y":140,"w":60,"h":440,"orient":"v"},
+    "H": {"x":350,"y":140,"w":60,"h":440,"orient":"v"},
+    "K": {"x":625,"y":140,"w":60,"h":440,"orient":"v"},
+    "J": {"x":565,"y":140,"w":60,"h":440,"orient":"v"},
+    "E": {"x":900,"y":65,"w":60,"h":480,"orient":"v"},
+    "A": {"x":60,"y":660,"w":325,"h":60,"orient":"h"}
+  }
+};
+
+var _floorViewActive = false;
+
+function getShelfStatus(letter) {
+  var hasItems = false, hasCrit = false, hasLow = false;
+  for (var k in DATA) {
+    if (DATA[k].shelf !== letter) continue;
+    var items = DATA[k].items;
+    if (items.length === 0) continue;
+    hasItems = true;
+    for (var i = 0; i < items.length; i++) {
+      var q = items[i].qty || 0;
+      if (q > 0 && q <= 10) hasCrit = true;
+      else if (q > 10 && q <= 50) hasLow = true;
+    }
+  }
+  if (!hasItems) return "empty";
+  if (hasCrit) return "crit";
+  if (hasLow) return "low";
+  return "ok";
+}
+
+function getShelfFill(letter) {
+  var st = getShelfStatus(letter);
+  if (st === "crit") return "#c0392b";
+  if (st === "low") return "#b7770d";
+  if (st === "empty") return "#0d1f38";
+  return "#1a3a5c";
+}
+
+function getShelfBorder(letter) {
+  var st = getShelfStatus(letter);
+  if (st === "crit") return "#e74c3c";
+  if (st === "low") return "#f39c12";
+  if (st === "empty") return "#1e3a5a";
+  return "#4cc9f0";
+}
+
+function getShelfStats(letter) {
+  var total = 0, occ = 0, crit = 0, low = 0;
+  for (var k in DATA) {
+    if (DATA[k].shelf !== letter) continue;
+    var items = DATA[k].items;
+    for (var i = 0; i < items.length; i++) {
+      total++;
+      var q = items[i].qty || 0;
+      if (q > 0) occ++;
+      if (q > 0 && q <= 10) crit++;
+      else if (q > 10 && q <= 50) low++;
+    }
+  }
+  return {total: total, occ: occ, crit: crit, low: low};
+}
+
+function renderFloorPlan() {
+  var container = document.getElementById("floorPlanContainer");
+  var board = document.getElementById("board");
+  var cfg = FLOOR_CONFIG;
+  var svg_w = cfg.svg_w, svg_h = cfg.svg_h;
+  var svg_file = cfg.svg_file || "map.svg";
+
+  var boardW = board.clientWidth - 24;
+  var boardH = board.clientHeight - 24;
+  var scale = Math.min(boardW / svg_w, boardH / svg_h);
+  var dispW = Math.round(svg_w * scale);
+  var dispH = Math.round(svg_h * scale);
+
+  fetch(svg_file)
+    .then(function(r) { return r.text(); })
+    .then(function(svgText) {
+      var parser = new DOMParser();
+      var svgEl = parser.parseFromString(svgText, "image/svg+xml").documentElement;
+
+      svgEl.setAttribute("class", "floor-plan-svg");
+      svgEl.setAttribute("viewBox", svg_w + " " + svg_h);
+      svgEl.style.width = dispW + "px";
+      svgEl.style.height = dispH + "px";
+
+      for (var letter in cfg.shelves) {
+        var rect = svgEl.querySelector("#shelf-" + letter);
+        if (!rect) continue;
+
+        var fill = getShelfFill(letter);
+        var stroke = getShelfBorder(letter);
+        var stats = getShelfStats(letter);
+
+        rect.setAttribute("fill", fill);
+        rect.setAttribute("stroke", stroke);
+        rect.setAttribute("stroke-width", "2");
+
+        var oldLabels = rect.parentElement.querySelectorAll(".floor-label");
+        for (var li = 0; li < oldLabels.length; li++) oldLabels[li].remove();
+
+        var s = cfg.shelves[letter];
+        var cx = s.x + s.w / 2;
+        var cy = s.y + s.h / 2;
+        var fontSize = Math.min(s.w, s.h) * 0.55;
+        var labelClass = "floor-label" + (stats.total === 0 ? " empty" : "");
+
+        var badge = "";
+        if (stats.crit > 0) badge = '<tspan dx="2" dy="8" font-size="9" fill="#e74c3c">\u26a0' + stats.crit + '</tspan>';
+        if (stats.low > 0 && stats.crit === 0) badge = '<tspan dx="2" dy="8" font-size="9" fill="#f39c12">\u26a1' + stats.low + '</tspan>';
+
+        var textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        textEl.setAttribute("class", labelClass);
+        textEl.setAttribute("x", cx);
+        textEl.setAttribute("y", cy);
+        textEl.setAttribute("font-size", fontSize);
+        textEl.setAttribute("text-anchor", "middle");
+        textEl.setAttribute("dominant-baseline", "middle");
+        textEl.innerHTML = letter + badge;
+        rect.parentElement.appendChild(textEl);
+
+        rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
+        rect.addEventListener("mouseover", (function(l, st) { return function(e) { floorTip(e, l, st.total, st.occ, st.crit, st.low); }; })(letter, stats));
+        rect.addEventListener("mouseout", floorHideTip);
+      }
+
+      var wrapper = document.createElement("div");
+      wrapper.style.position = "relative";
+      wrapper.appendChild(svgEl);
+
+      var hint = document.createElement("div");
+      hint.className = "floor-hint";
+      hint.textContent = "\ud83d\udccc \u70b9\u51fb\u8d27\u67b6\u8fdb\u5165\u5c42\u6570\u9009\u62e9";
+      wrapper.appendChild(hint);
+
+      var tip = document.createElement("div");
+      tip.id = "floorTip";
+      tip.className = "floor-tip";
+      wrapper.appendChild(tip);
+
+      container.innerHTML = "";
+      container.appendChild(wrapper);
+    })
+    .catch(function(err) {
+      container.innerHTML = '<div style="color:red;padding:20px;">\u5e73\u9762\u56fe\u52a0\u8f7d\u5931\u8d25: ' + err + '</div>';
+    });
+}
+
+function floorTip(e, letter, total, occ, crit, low) {
+  var tip = document.getElementById("floorTip");
+  if (!tip) return;
+  var parts = [];
+  if (total === 0) parts.push("\u7a7a\u8d27\u67b6");
+  else {
+    parts.push("\u5df2\u5360\u7528 " + occ + "/" + total);
+    if (crit > 0) parts.push("\u26a0\ufe0f \u544a\u8b66 " + crit);
+    if (low > 0) parts.push("\u26a1 \u4f4e\u4f4d " + low);
+  }
+  tip.textContent = "\u8d27\u67b6" + letter + "\uff1a" + parts.join(" | ");
+  tip.style.display = "block";
+  var rect = e.target.closest('svg').getBoundingClientRect();
+  tip.style.left = (e.clientX - rect.left + 10) + "px";
+  tip.style.top = (e.clientY - rect.top - 30) + "px";
+}
+
+function floorHideTip() {
+  var tip = document.getElementById("floorTip");
+  if (tip) tip.style.display = "none";
+}
+
+function toggleView() {
+  var board = document.getElementById("board");
+  var shelves = board.querySelectorAll(".shelf");
+  var floorCont = document.getElementById("floorPlanContainer");
+  var tip = document.getElementById("boardTip");
+  var btn = document.getElementById("viewToggleBtn");
+
+  _floorViewActive = !_floorViewActive;
+
+  if (_floorViewActive) {
+    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "none";
+    floorCont.style.display = "flex";
+    if (tip) tip.style.display = "none";
+    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
+    renderFloorPlan();
+  } else {
+    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "";
+    floorCont.style.display = "none";
+    if (tip) tip.style.display = "block";
+    btn.textContent = "\ud83d\udcd0 \u5e73\u9762\u56fe";
+  }
+}
+
 
 // ===== 查询弹窗 =====
 var SEARCH_LIMIT = 20;

@@ -140,7 +140,7 @@
  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
 </header>
 <div class="main">
- <div class="board" id="board">
+ <div class="board" id="board" style="display:none">
    <div class="floor-plan-container" id="floorPlanContainer" style="display:flex"></div>
    <div class="empty-board" id="emptyBoard">
      <div class="empty-board-icon">📂</div>
@@ -341,7 +341,7 @@ function renderBoard(shelfList) {
   var empty = document.getElementById("emptyBoard");
   var tip = document.getElementById("boardTip");
   if (empty) empty.style.display = "none";
-  tip.style.display = "block";
+  tip.style.display = "none";  // 默认隐藏货架提示（平面图模式下）
 
   var oldShelves = board.querySelectorAll(".shelf");
   for (var s = 0; s < oldShelves.length; s++) oldShelves[s].remove();
@@ -1086,7 +1086,7 @@ function floorTip(e, letter, total, occ, crit, low) {
     if (low > 0) parts.push("\u26a1 \u4f4e\u4f4d " + low);
   }
   tip.textContent = "\u8d27\u67b6" + letter + "\uff1a" + parts.join(" | ");
-  tip.style.display = "block";
+  tip.style.display = "none";  // 默认隐藏货架提示（平面图模式下）
   var rect = e.target.closest('svg').getBoundingClientRect();
   tip.style.left = (e.clientX - rect.left + 10) + "px";
   tip.style.top = (e.clientY - rect.top - 30) + "px";

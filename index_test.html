@@ -953,7 +953,7 @@ var FLOOR_CONFIG = {
   }
 };
 
-var _floorViewActive = false;
+var _floorViewActive = true;
 
 function getShelfStatus(letter) {
   var hasItems = false, hasCrit = false, hasLow = false;
@@ -1290,7 +1290,8 @@ function highlightSlot(loc) {
 // ===== ESC 关闭搜索弹窗 =====
 document.addEventListener("keydown", function(e) {
   if (e.key === "Escape") { closeModal(); closeSafeAlert(); closeSearch(); }
-});
+})
+window.onload = function() { renderFloorPlan(); };
 
 </script>
 <div class="modal-overlay" id="safeAlertOverlay">

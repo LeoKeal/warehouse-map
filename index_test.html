@@ -140,8 +140,8 @@
  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
 </header>
 <div class="main">
- <div class="board" id="board" style="display:none">
-   <div class="floor-plan-container" id="floorPlanContainer" style="display:none"></div>
+ <div class="board" id="board">
+   <div class="floor-plan-container" id="floorPlanContainer" style="display:flex"></div>
    <div class="empty-board" id="emptyBoard">
      <div class="empty-board-icon">📂</div>
      <div>请选择 Excel 数据源文件</div>
@@ -338,7 +338,6 @@ function loadExcel(file) {
 // ===== 渲染货架 =====
 function renderBoard(shelfList) {
   var board = document.getElementById("board");
-  // board 默认 display:none，由 toggleView 控制
   var empty = document.getElementById("emptyBoard");
   var tip = document.getElementById("boardTip");
   if (empty) empty.style.display = "none";
@@ -369,7 +368,6 @@ function renderBoard(shelfList) {
   for (var si = 0; si < shelfList.length; si++) {
     renderPreview(shelfList[si]);
   }
-  board.style.display = "none";  // 加载数据后强制隐藏，保持平面图模式
 }
 
 // ===== 渲染层预览 =====
@@ -1008,7 +1006,7 @@ function getShelfStats(letter) {
   return {total: total, occ: occ, crit: crit, low: low};
 }
 
-function renderFloorPlan(hidden) {
+function renderFloorPlan() {
   var container = document.getElementById("floorPlanContainer");
   var board = document.getElementById("board");
   var cfg = FLOOR_CONFIG;
@@ -1071,10 +1069,9 @@ function renderFloorPlan(hidden) {
 
       container.innerHTML = "";
       container.appendChild(wrapper);
-      if (hidden) {
-        board.style.display = "none";
-        container.style.display = "flex";
-      }
+      // 显示平面图容器（页面加载默认显示平面图）
+      container.style.display = "flex";
+      board.style.display = "none";
     })
     .catch(function(err) {
       container.innerHTML = '<div style="color:red;padding:20px;">\u5e73\u9762\u56fe\u52a0\u8f7d\u5931\u8d25: ' + err + '</div>';
@@ -1105,23 +1102,31 @@ function floorHideTip() {
 
 function toggleView() {
   var board = document.getElementById("board");
+  var shelves = board.querySelectorAll(".shelf");
   var floorCont = document.getElementById("floorPlanContainer");
+  var tip = document.getElementById("boardTip");
   var btn = document.getElementById("viewToggleBtn");
 
   _floorViewActive = !_floorViewActive;
 
   if (_floorViewActive) {
-    // 切到平面图
-    renderFloorPlan(true);
-    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c2\u56fe";
+    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "none";
+    floorCont.style.display = "flex";
+    if (tip) tip.style.display = "none";
+    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
+    renderFloorPlan();
   } else {
-    // 切到货架视图
-    board.style.display = "";
+    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "";
     floorCont.style.display = "none";
+    if (tip) tip.style.display = "block";
     btn.textContent = "\ud83d\udcd0 \u5e73\u9762\u56fe";
   }
 }
 
+
+// ===== 查询弹窗 =====
+var SEARCH_LIMIT = 20;
+var _searchAll = false;
 
 function showSearchModal() {
   if (Object.keys(DATA).length === 0) { showToast("\u26a0\ufe0f 请先加载数据"); return; }

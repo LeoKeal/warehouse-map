@@ -141,7 +141,7 @@
 </header>
 <div class="main">
  <div class="board" id="board" style="display:none">
-   <div class="floor-plan-container" id="floorPlanContainer" style="display:flex"></div>
+   <div class="floor-plan-container" id="floorPlanContainer" style="display:none"></div>
    <div class="empty-board" id="emptyBoard">
      <div class="empty-board-icon">📂</div>
      <div>请选择 Excel 数据源文件</div>
@@ -338,10 +338,11 @@ function loadExcel(file) {
 // ===== 渲染货架 =====
 function renderBoard(shelfList) {
   var board = document.getElementById("board");
+  // board 默认 display:none，由 toggleView 控制
   var empty = document.getElementById("emptyBoard");
   var tip = document.getElementById("boardTip");
   if (empty) empty.style.display = "none";
-  tip.style.display = "none";  // 默认隐藏货架提示（平面图模式下）
+  tip.style.display = "block";
 
   var oldShelves = board.querySelectorAll(".shelf");
   for (var s = 0; s < oldShelves.length; s++) oldShelves[s].remove();
@@ -368,6 +369,7 @@ function renderBoard(shelfList) {
   for (var si = 0; si < shelfList.length; si++) {
     renderPreview(shelfList[si]);
   }
+  board.style.display = "none";  // 加载数据后强制隐藏，保持平面图模式
 }
 
 // ===== 渲染层预览 =====
@@ -1006,7 +1008,7 @@ function getShelfStats(letter) {
   return {total: total, occ: occ, crit: crit, low: low};
 }
 
-function renderFloorPlan() {
+function renderFloorPlan(hidden) {
   var container = document.getElementById("floorPlanContainer");
   var board = document.getElementById("board");
   var cfg = FLOOR_CONFIG;
@@ -1069,6 +1071,10 @@ function renderFloorPlan() {
 
       container.innerHTML = "";
       container.appendChild(wrapper);
+      if (hidden) {
+        board.style.display = "none";
+        container.style.display = "flex";
+      }
     })
     .catch(function(err) {
       container.innerHTML = '<div style="color:red;padding:20px;">\u5e73\u9762\u56fe\u52a0\u8f7d\u5931\u8d25: ' + err + '</div>';
@@ -1086,7 +1092,7 @@ function floorTip(e, letter, total, occ, crit, low) {
     if (low > 0) parts.push("\u26a1 \u4f4e\u4f4d " + low);
   }
   tip.textContent = "\u8d27\u67b6" + letter + "\uff1a" + parts.join(" | ");
-  tip.style.display = "none";  // 默认隐藏货架提示（平面图模式下）
+  tip.style.display = "block";
   var rect = e.target.closest('svg').getBoundingClientRect();
   tip.style.left = (e.clientX - rect.left + 10) + "px";
   tip.style.top = (e.clientY - rect.top - 30) + "px";
@@ -1099,31 +1105,23 @@ function floorHideTip() {
 
 function toggleView() {
   var board = document.getElementById("board");
-  var shelves = board.querySelectorAll(".shelf");
   var floorCont = document.getElementById("floorPlanContainer");
-  var tip = document.getElementById("boardTip");
   var btn = document.getElementById("viewToggleBtn");
 
   _floorViewActive = !_floorViewActive;
 
   if (_floorViewActive) {
-    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "none";
-    floorCont.style.display = "flex";
-    if (tip) tip.style.display = "none";
-    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
-    renderFloorPlan();
+    // 切到平面图
+    renderFloorPlan(true);
+    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c2\u56fe";
   } else {
-    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "";
+    // 切到货架视图
+    board.style.display = "";
     floorCont.style.display = "none";
-    if (tip) tip.style.display = "block";
     btn.textContent = "\ud83d\udcd0 \u5e73\u9762\u56fe";
   }
 }
 
-
-// ===== 查询弹窗 =====
-var SEARCH_LIMIT = 20;
-var _searchAll = false;
 
 function showSearchModal() {
   if (Object.keys(DATA).length === 0) { showToast("\u26a0\ufe0f 请先加载数据"); return; }

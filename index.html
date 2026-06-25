@@ -137,7 +137,7 @@
    <div class="detail-btn-wrap"><button class="detail-btn" id="safeAlertBtn" onclick="showSafeAlertModal()">明细 <span id="safeAlertBadge" class="badge"></span></button></div>
  </div>
  <button class="header-btn" onclick="showSearchModal()">🔍 查询</button>
- <button class="header-btn" onclick="toggleView()" id="viewToggleBtn">📐 平面图</button>
+ <button class="header-btn" onclick="toggleView()" id="viewToggleBtn">📦 货架视图</button>
  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
 </header>
 <div class="main">
@@ -148,7 +148,7 @@
      <div class="data-info">支持 .xlsx / .xls 格式<br>表头需包含：料号、库位、品名、规格、可用量<br><span style="color:#9b59b6">✅ 支持同库位存放多种物料</span></div>
    </div>
    <div class="tip" id="boardTip" style="display:none">👆 点击货架 → 选择层数 → 点击货位查看详情</div>
-   <div id="floorPlanContainer" class="floor-plan-container" style="display:none"></div>
+   <div id="floorPlanContainer" class="floor-plan-container" style="display:flex"></div>
  </div>
  <div class="panel">
    <div class="panel-title" id="panelTitle">📃 库位详情</div>
@@ -243,18 +243,18 @@ function getShelfStatus(letter) {
 
 function getShelfFill(letter) {
   var st = getShelfStatus(letter);
-  if (st === "crit") return "#c0392b";
-  if (st === "low") return "#b7770d";
-  if (st === "empty") return "#0d1f38";
-  return "#1a3a5c";
+  if (st === "crit") return "#d94040";
+  if (st === "low") return "#e09000";
+  if (st === "empty") return "#1c2d40";
+  return "#1e5080";
 }
 
 function getShelfBorder(letter) {
   var st = getShelfStatus(letter);
-  if (st === "crit") return "#e74c3c";
-  if (st === "low") return "#f39c12";
-  if (st === "empty") return "#1e3a5a";
-  return "#4cc9f0";
+  if (st === "crit") return "#ff5c5c";
+  if (st === "low") return "#ffaa30";
+  if (st === "empty") return "#2a4a6a";
+  return "#67d8f0";
 }
 
 function getShelfStats(letter) {
@@ -280,14 +280,12 @@ function renderFloorPlan() {
   var svg_w = cfg.svg_w, svg_h = cfg.svg_h;
   var svg_file = cfg.svg_file || "map.svg";
 
-  // Scale to fit board width minus padding
   var boardW = board.clientWidth - 24;
   var boardH = board.clientHeight - 24;
   var scale = Math.min(boardW / svg_w, boardH / svg_h);
   var dispW = Math.round(svg_w * scale);
   var dispH = Math.round(svg_h * scale);
 
-  // Load map.svg and apply dynamic coloring
   fetch(svg_file)
     .then(function(r) { return r.text(); })
     .then(function(svgText) {
@@ -295,11 +293,13 @@ function renderFloorPlan() {
       var svgEl = parser.parseFromString(svgText, "image/svg+xml").documentElement;
 
       svgEl.setAttribute("class", "floor-plan-svg");
-      svgEl.setAttribute("viewBox", svg_w + " " + svg_h);
-      svgEl.style.width = dispW + "px";
-      svgEl.style.height = dispH + "px";
+      svgEl.setAttribute("viewBox", "0 0 " + svg_w + " " + svg_h);
+      svgEl.style.width = "auto";
+      svgEl.style.height = "auto";
+      svgEl.style.maxWidth = "100%";
+      svgEl.style.maxHeight = "100%";
 
-      // Color each shelf rect and add label
+      // Color each shelf rect (do NOT add labels - SVG already has shelf names)
       for (var letter in cfg.shelves) {
         var rect = svgEl.querySelector("#shelf-" + letter);
         if (!rect) continue;
@@ -310,33 +310,8 @@ function renderFloorPlan() {
 
         rect.setAttribute("fill", fill);
         rect.setAttribute("stroke", stroke);
-        rect.setAttribute("stroke-width", "2");
+        rect.setAttribute("stroke-width", "3");
 
-        // Remove old labels
-        var oldLabels = rect.parentElement.querySelectorAll(".floor-label, .floor-hint-label");
-        for (var li = 0; li < oldLabels.length; li++) oldLabels[li].remove();
-
-        var s = cfg.shelves[letter];
-        var cx = s.x + s.w / 2;
-        var cy = s.y + s.h / 2;
-        var fontSize = Math.min(s.w, s.h) * 0.55;
-        var labelClass = "floor-label" + (stats.total === 0 ? " empty" : "");
-
-        var badge = "";
-        if (stats.crit > 0) badge = '<tspan dx="2" dy="8" font-size="9" fill="#e74c3c">\u26a0' + stats.crit + '</tspan>';
-        if (stats.low > 0 && stats.crit === 0) badge = '<tspan dx="2" dy="8" font-size="9" fill="#f39c12">\u26a1' + stats.low + '</tspan>';
-
-        var textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        textEl.setAttribute("class", labelClass);
-        textEl.setAttribute("x", cx);
-        textEl.setAttribute("y", cy);
-        textEl.setAttribute("font-size", fontSize);
-        textEl.setAttribute("text-anchor", "middle");
-        textEl.setAttribute("dominant-baseline", "middle");
-        textEl.innerHTML = letter + badge;
-        rect.parentElement.appendChild(textEl);
-
-        // Events
         rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
         rect.addEventListener("mouseover", (function(l, st) { return function(e) { floorTip(e, l, st.total, st.occ, st.crit, st.low); }; })(letter, stats));
         rect.addEventListener("mouseout", floorHideTip);
@@ -344,6 +319,10 @@ function renderFloorPlan() {
 
       var wrapper = document.createElement("div");
       wrapper.style.position = "relative";
+      wrapper.style.display = "block";
+      wrapper.style.width = dispW + "px";
+      wrapper.style.height = dispH + "px";
+      wrapper.style.overflow = "hidden";
       wrapper.appendChild(svgEl);
 
       var hint = document.createElement("div");
@@ -396,18 +375,18 @@ function toggleView() {
   _floorViewActive = !_floorViewActive;
 
   if (_floorViewActive) {
-    // Switch to floor plan
+    // Switch to floor plan view
     for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "none";
     floorCont.style.display = "flex";
-    tip.style.display = "none";
-    btn.textContent = "📦 货架视图";
+    if (tip) tip.style.display = "none";
+    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
     renderFloorPlan();
   } else {
     // Switch to shelf card view
     for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "";
     floorCont.style.display = "none";
-    tip.style.display = "block";
-    btn.textContent = "📐 平面图";
+    if (tip) tip.style.display = "block";
+    btn.textContent = "\ud83d\udcd0 \u5e73\u9762\u56fe";
   }
 }
 

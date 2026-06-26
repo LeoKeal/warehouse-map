@@ -1090,9 +1090,15 @@ function renderFloorPlan() {
         rect.setAttribute("stroke-width", strokeW);
         if (_focusShelf === letter) {
           rect.classList.add("svg-shelf-focus");
-          // 移至同组末尾（而不是SVG根目录）→ 保留transform.z-order提升+位置不变
-          var parent = rect.parentNode;
-          if (parent) parent.appendChild(rect);
+          // 移至 SVG 根目录最末尾 → 保证 z-order 最顶层，glow 不被任何相邻货架遮挡
+          // 补偿父级 transform=translate(0.5,0.5)，否则 rect 偏移 0.5px 导致文字错位
+          var g = rect.parentNode;
+          var m = g && g.getAttribute && g.getAttribute("transform");
+          var tx = 0, ty = 0;
+          if (m) { var t = m.match(/translate\(([^,]+),?\s*([^)]*)\)/); if (t) { tx = parseFloat(t[1])||0; ty = parseFloat(t[2])||0; } }
+          rect.setAttribute("x", parseFloat(rect.getAttribute("x")) + tx);
+          rect.setAttribute("y", parseFloat(rect.getAttribute("y")) + ty);
+          svgEl.appendChild(rect);
         } else {
           rect.classList.remove("svg-shelf-focus");
         }

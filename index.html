@@ -115,13 +115,13 @@
  .floor-plan-svg{border-radius:8px;border:2px solid #1a3a5c;background:#0d1f38;cursor:pointer} .svg-wrap{position:relative;display:inline-block;overflow:visible}
  .floor-shelf{cursor:pointer}
  /* 货架视图焦点：橙色发光呼吸动画 */
- .shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#ff9900!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
+ .shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#00ff88!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
  @keyframes shelf-focus-pulse{0%,100%{box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}50%{box-shadow:0 0 28px rgba(255,153,0,.6),inset 0 0 28px rgba(255,153,0,.1)}}
   /* 平面图焦点高亮矩形：橙色描边+呼吸脉冲动画 */
  .hl-rect{animation:hl-pulse 2s ease-in-out infinite}
- @keyframes hl-pulse{0%,100%{stroke:#ff9900;stroke-width:4}50%{stroke:#ffcc00;stroke-width:6}}
+ @keyframes hl-pulse{0%,100%{stroke:#00ff88;stroke-width:6}50%{stroke:#00ffcc;stroke-width:8}}
 
-.shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#ff9900!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
+.shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#00ff88!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
  @keyframes shelf-focus-pulse{0%,100%{box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}50%{box-shadow:0 0 28px rgba(255,153,0,.6),inset 0 0 28px rgba(255,153,0,.1)}}
  /* 平面图SVG货架焦点动画 */
  .svg-shelf-focus{animation:svg-shelf-focus 2s ease-in-out infinite}
@@ -1100,9 +1100,10 @@ function renderFloorPlan() {
           hl.setAttribute("width", w);
           hl.setAttribute("height", h);
           hl.setAttribute("fill", "none");
-          hl.setAttribute("stroke", "#ff9900");
-          hl.setAttribute("stroke-width", "4");
+          hl.setAttribute("stroke", "#00ff88");
+          hl.setAttribute("stroke-width", "6");
           hl.setAttribute("rx", "4");
+          hl.setAttribute("pointer-events", "none");
           hl.classList.add("hl-rect");
           svgEl.appendChild(hl);  // 追加到末尾，图层最上
         }

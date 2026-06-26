@@ -1080,14 +1080,14 @@ function renderFloorPlan() {
         var fill = getShelfFill(letter);
         var stroke = getShelfBorder(letter);
         var stats = getShelfStats(letter);
-        // 焦点高亮：用 drop-shadow 而非 stroke-width，glow 自然超出矩形边界不遮挡
+        var strokeW = (_focusShelf === letter) ? "5" : "3";
         rect.setAttribute("fill", fill);
         rect.setAttribute("stroke", stroke);
-        rect.setAttribute("stroke-width", "3");
-
-        // 焦点高亮：直接在 rect 上添加 class（图层无遮挡，点击穿透）
+        rect.setAttribute("stroke-width", strokeW);
         if (_focusShelf === letter) {
           rect.classList.add("svg-shelf-focus");
+          // 移至 SVG 最末尾 → 渲染在最上层，glow 不被相邻货架遮挡
+          svgEl.appendChild(rect);
         } else {
           rect.classList.remove("svg-shelf-focus");
         }

@@ -114,8 +114,13 @@
  .floor-plan-container{display:flex;flex-direction:column;align-items:center;padding:12px;width:100%;height:100%;overflow:auto}
  .floor-plan-svg{border-radius:8px;border:2px solid #1a3a5c;background:#0d1f38;cursor:pointer}
  .floor-shelf{cursor:pointer}
- .shelf.selected-shelf{border-color:#00ffaa !important;box-shadow:0 0 16px rgba(0,255,170,.4);animation:shelf-selected 2s ease-in-out infinite}
- @keyframes shelf-selected{0%,100%{box-shadow:0 0 16px rgba(0,255,170,.4)}50%{box-shadow:0 0 28px rgba(0,255,170,.7)}}
+ /* 货架视图焦点：橙色发光呼吸动画 */
+ .shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#ff9900!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
+ @keyframes shelf-focus-pulse{0%,100%{box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}50%{box-shadow:0 0 28px rgba(255,153,0,.6),inset 0 0 28px rgba(255,153,0,.1)}}
+ /* 平面图SVG货架焦点动画 */
+ .svg-shelf-focus{animation:svg-shelf-focus 2s ease-in-out infinite}
+ @keyframes svg-shelf-focus{0%,100%{stroke:#ff9900;filter:drop-shadow(0 0 6px #ff9900)}50%{stroke:#ffcc00;filter:drop-shadow(0 0 16px #ffaa33)}}
+
  .floor-label{font-family:Microsoft YaHei,sans-serif;font-weight:bold;fill:#ffffff;pointer-events:none;font-size:20px}
  .floor-label.empty{fill:#4a6080}
  .floor-hint{color:#4a6080;font-size:12px;margin-top:8px;text-align:center}
@@ -258,10 +263,8 @@ function getSlotStatus(loc) {
 
 // ===== 加载 Excel =====
 function loadExcel(file) {
-  _selectedShelf = null;
-  _searchHighlightShelf = null;
-  _searchHighlightPos = null;
-  _inSearchMode = false;
+  _focusShelf = null;
+  _focused = false;
   document.getElementById("fileName").textContent = file.name;
   var reader = new FileReader();
   reader.onload = function(e) {
@@ -372,7 +375,7 @@ function renderBoard(shelfList) {
 
     var shelfDiv = document.createElement("div");
     shelfDiv.className = "shelf";
-    if (_selectedShelf === shelf) shelfDiv.className = "shelf selected-shelf";
+    if (_focusShelf === shelf) shelfDiv.className = "shelf shelf-focus";
     shelfDiv.id = "shelf-" + shelf;
     shelfDiv.onclick = (function(s) { return function() { showLayers(s); }; })(shelf);
     shelfDiv.innerHTML =
@@ -440,11 +443,12 @@ function calcStatsForLayer(locations) {
 }
 
 // ===== 右侧层列表 =====
-function showLayers(shelf, fromSearch) {
+function showLayers(shelf) {
   if (Object.keys(DATA).length === 0) { showToast("⚠️ 请先加载 Excel 数据"); return; }
   // 清除搜索高亮（除非是搜索跳转）
-  if (!fromSearch) clearSearchHighlight();
-  _selectedShelf = shelf;
+  clearFocus();
+  _focusShelf = shelf;
+  _focused = true;
   document.getElementById("panelHint").style.display = "none";
   var list = document.getElementById("layerList");
   list.innerHTML = "";
@@ -519,14 +523,7 @@ function showLayers(shelf, fromSearch) {
       }
 
       dot.onmouseover = function() { this.style.transform = "scale(1.15)"; };
-      dot.onmouseout = function() { this.style.transform = "scale(1)"; };
-      // 搜索高亮
-      if (_inSearchMode && _searchHighlightPos === loc.layer + "-" + loc.pos) {
-        dot.style.boxShadow = "0 0 14px #ff9900, 0 0 6px #ff6600";
-        dot.style.borderColor = "#ff9900";
-        dot.style.zIndex = "50";
-      }
-      grid.appendChild(dot);
+      dot.onmouseout = function() { this.style.transform = "scale(1)"; };      grid.appendChild(dot);
     }
 
     card.appendChild(grid);
@@ -1016,8 +1013,8 @@ function getShelfFill(letter) {
 }
 
 function getShelfBorder(letter) {
-  // 选中货架优先级最高（亮绿色）
-  if (_selectedShelf === letter) return "#00ffaa";
+  // 焦点货架优先级最高（橙色）
+  if (_focusShelf === letter) return "#ff9900";
   var st = getShelfStatus(letter);
   if (st === "crit") return "#ff5c5c";
   if (st === "low") return "#ffaa30";
@@ -1049,9 +1046,10 @@ function renderFloorPlan() {
   var svg_w = cfg.svg_w, svg_h = cfg.svg_h;
   var svg_file = cfg.svg_file || "map.svg";
 
-  var boardW = board.clientWidth - 24;
-  var boardH = board.clientHeight - 24;
-  var scale = Math.min(boardW / svg_w, boardH / svg_h);
+  // 优先用容器自身尺寸；若容器隐藏（初始加载时），用 window 尺寸 fallback
+  var ctw = container.clientWidth > 0 ? container.clientWidth : (window.innerWidth || 800);
+  var cth = container.clientHeight > 0 ? container.clientHeight : (window.innerHeight || 600);
+  var scale = Math.min((ctw - 24) / svg_w, (cth - 24) / svg_h);
   var dispW = Math.round(svg_w * scale);
   var dispH = Math.round(svg_h * scale);
 
@@ -1075,19 +1073,19 @@ function renderFloorPlan() {
         var fill = getShelfFill(letter);
         var stroke = getShelfBorder(letter);
         var stats = getShelfStats(letter);
-        var strokeW = (_selectedShelf === letter) ? "5" : "3";
-
-        // 搜索高亮的货架额外橙色边框
-        if (_searchHighlightShelf === letter) {
-          stroke = "#ff9900";
-          strokeW = "4";
-        }
-
+        var strokeW = (_focusShelf === letter) ? "5" : "3";
         rect.setAttribute("fill", fill);
         rect.setAttribute("stroke", stroke);
         rect.setAttribute("stroke-width", strokeW);
 
-        rect.addEventListener("click", (function(l) { return function() { showLayers(l, _inSearchMode); }; })(letter));
+        // 焦点动画 class
+        if (_focusShelf === letter) {
+          rect.classList.add("svg-shelf-focus");
+        } else {
+          rect.classList.remove("svg-shelf-focus");
+        }
+
+        rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
         rect.addEventListener("mouseover", (function(l, st) { return function(e) { floorTip(e, l, st.total, st.occ, st.crit, st.low); }; })(letter, stats));
         rect.addEventListener("mouseout", floorHideTip);
       }
@@ -1154,14 +1152,14 @@ function toggleView() {
   if (_floorViewActive) {
     // 显示平面图
     renderFloorPlan();
-    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c2\u56fe";
+    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
   } else {
     // 显示货架视图
     board.style.display = "";
     floorCont.style.display = "none";
-    btn.textContent = "\ud83d\udcd0 \u5e76\u9762\u56fe";
+    btn.textContent = "\ud83d\udcd0 \u5e73\u9762\u56fe";
     // 切回货架视图时恢复当前选中货架的显示
-    if (_selectedShelf) showLayers(_selectedShelf);
+    if (_focusShelf) showLayers(_focusShelf);
   }
 }
 
@@ -1171,16 +1169,13 @@ function toggleView() {
 // ===== 查询弹窗 =====
 var SEARCH_LIMIT = 20;
 var _searchAll = false;
-var _selectedShelf = null;        // 当前选中的货架（货架视图）
-var _searchHighlightShelf = null; // 搜索高亮的货架
-var _searchHighlightPos = null;   // 搜索高亮的货位
-var _inSearchMode = false;        // 是否处于搜索定位模式
+var _focusShelf = null;         // 焦点货架（点击或搜索设置，覆盖式单选）
+var _focused = false;             // 是否处于焦点模式
 
 function showSearchModal() {
   if (Object.keys(DATA).length === 0) { showToast("\u26a0\ufe0f 请先加载数据"); return; }
   _searchAll = false;
-  _selectedShelf = null;
-  clearSearchHighlight();
+  clearFocus();
   document.getElementById("searchInput").value = "";
   document.getElementById("searchHint").textContent = "输入关键词实时搜索，支持料号/品名/规格/库位/备注";
   document.getElementById("searchBody").innerHTML = "";
@@ -1191,7 +1186,7 @@ function showSearchModal() {
 function closeSearch(e) {
   if (e && e.target !== e.currentTarget) return;
   document.getElementById("searchOverlay").classList.remove("show");
-  clearSearchHighlight();
+  clearFocus();
 }
 
 function onSearchKeydown(e) {
@@ -1290,15 +1285,11 @@ function navigateToLoc(code) {
   var loc = DATA[code];
   if (!loc) return;
 
-  // 设置搜索高亮状态
-  _searchHighlightShelf = loc.shelf;
-  _searchHighlightPos = loc.layer + "-" + loc.pos;
-  _inSearchMode = true;
+  _focusShelf = loc.shelf;
+  _focused = true;
 
-  // 展开目标货架的层卡片
-  showLayers(loc.shelf, true); // 传入true表示搜索定位模式
+  showLayers(loc.shelf);
   setTimeout(function() {
-    // 找到对应的层卡片并展开
     var cards = document.querySelectorAll(".layer-card");
     for (var ci = 0; ci < cards.length; ci++) {
       var title = cards[ci].querySelector(".layer-card-title");
@@ -1308,39 +1299,21 @@ function navigateToLoc(code) {
         break;
       }
     }
-    // 高亮对应货位格子
-    highlightSlotCell(loc.shelf, loc.layer, loc.pos);
-    // 打开货位详情弹窗
     showModal(loc);
-    // 清除搜索高亮（弹窗关闭后或切视图时清除）
   }, 100);
 }
 
-function highlightSlotCell(shelf, layer, pos) {
-  // 在平面图和货架视图中高亮对应货位格子
-  var slotEl = document.querySelector(".ms-cell[data-shelf=\"" + shelf + "\"][data-layer=\"" + layer + "\"][data-pos=\"" + pos + "\"]");
-  if (slotEl) {
-    slotEl.style.boxShadow = "0 0 12px #ff9900, 0 0 4px #ff6600";
-    slotEl.style.borderColor = "#ff9900";
-    slotEl.style.zIndex = "50";
-    slotEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
-}
-
-function clearSearchHighlight() {
-  _searchHighlightShelf = null;
-  _searchHighlightPos = null;
-  _inSearchMode = false;
-  // 清除所有格子高亮
-  document.querySelectorAll(".ms-cell.search-hl").forEach(function(el) {
-    el.classList.remove("search-hl");
-    el.style.boxShadow = "";
-    el.style.borderColor = "";
-    el.style.zIndex = "";
-  });
-  // 重新渲染平面图（清除搜索高亮）
+function clearFocus() {
+  _focusShelf = null;
+  _focused = false;
+  var svgRects = document.querySelectorAll(".svg-shelf-focus");
+  for (var i = 0; i < svgRects.length; i++) svgRects[i].classList.remove("svg-shelf-focus");
   if (_floorViewActive) renderFloorPlan();
 }
+
+
+
+
 
 function scrollToLayerCard(layer) {
   var cards = document.querySelectorAll(".layer-card");
@@ -1376,7 +1349,7 @@ function highlightSlot(loc) {
 
 // ===== ESC 关闭搜索弹窗 =====
 document.addEventListener("keydown", function(e) {
-  if (e.key === "Escape") { closeModal(); closeSafeAlert(); closeSearch(); }
+  if (e.key === "Escape") { closeModal(); closeSafeAlert(); closeSearch(); clearFocus(); }
 })
 window.onload = function() { renderFloorPlan(); };
 

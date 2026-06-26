@@ -117,6 +117,12 @@
  /* 货架视图焦点：橙色发光呼吸动画 */
  .shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#ff9900!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
  @keyframes shelf-focus-pulse{0%,100%{box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}50%{box-shadow:0 0 28px rgba(255,153,0,.6),inset 0 0 28px rgba(255,153,0,.1)}}
+  /* 平面图焦点高亮矩形：橙色描边+呼吸脉冲动画 */
+ .hl-rect{animation:hl-pulse 2s ease-in-out infinite}
+ @keyframes hl-pulse{0%,100%{stroke:#ff9900;stroke-width:4}50%{stroke:#ffcc00;stroke-width:6}}
+
+.shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#ff9900!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
+ @keyframes shelf-focus-pulse{0%,100%{box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}50%{box-shadow:0 0 28px rgba(255,153,0,.6),inset 0 0 28px rgba(255,153,0,.1)}}
  /* 平面图SVG货架焦点动画 */
  .svg-shelf-focus{animation:svg-shelf-focus 2s ease-in-out infinite}
  @keyframes svg-shelf-focus{0%,100%{filter:drop-shadow(0 0 8px rgba(255,153,0,.7))}50%{filter:drop-shadow(0 0 22px rgba(255,180,0,.95))}}
@@ -1079,10 +1085,26 @@ function renderFloorPlan() {
         rect.setAttribute("stroke", stroke);
         rect.setAttribute("stroke-width", "3");
 
+        // 焦点高亮矩形（无填充，只描边，图层在最上）
+        var oldHl = svgEl.querySelector("#shelf-" + letter + "-hl");
+        if (oldHl) oldHl.remove();
         if (_focusShelf === letter) {
-          rect.classList.add("svg-shelf-focus");
-        } else {
-          rect.classList.remove("svg-shelf-focus");
+          var hl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          var x = rect.getAttribute("x") || rect.getAttribute("x");
+          var y = rect.getAttribute("y");
+          var w = rect.getAttribute("width");
+          var h = rect.getAttribute("height");
+          hl.setAttribute("id", "shelf-" + letter + "-hl");
+          hl.setAttribute("x", x);
+          hl.setAttribute("y", y);
+          hl.setAttribute("width", w);
+          hl.setAttribute("height", h);
+          hl.setAttribute("fill", "none");
+          hl.setAttribute("stroke", "#ff9900");
+          hl.setAttribute("stroke-width", "4");
+          hl.setAttribute("rx", "4");
+          hl.classList.add("hl-rect");
+          svgEl.appendChild(hl);  // 追加到末尾，图层最上
         }
 
         rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
@@ -1321,9 +1343,9 @@ function navigateToLoc(code) {
 function clearFocus() {
   _focusShelf = null;
   _focused = false;
-  var svgRects = document.querySelectorAll(".svg-shelf-focus");
-  for (var i = 0; i < svgRects.length; i++) svgRects[i].classList.remove("svg-shelf-focus");
-  if (_floorViewActive) renderFloorPlan();
+  // 清除所有焦点高亮矩形
+  var hlRects = document.querySelectorAll(".hl-rect");
+  for (var i = 0; i < hlRects.length; i++) hlRects[i].remove();
 }
 
 

@@ -110,16 +110,15 @@
  .search-hl{background:#1a3a00;color:#a8e6cf;border-radius:2px;padding:0 1px;font-weight:bold}
  .empty-board-icon{font-size:64px;opacity:.3}
  .data-info{color:#4cc9f0;font-size:12px;background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 16px;margin-top:4px}
-
- .floor-plan-container{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:12px}
- .floor-plan-svg{width:100%;height:100%}
- .floor-shelf{transition:all .2s;cursor:pointer}
- .floor-shelf:hover{filter:brightness(1.3);transform-origin:center}
- .floor-label{font-size:13px;font-weight:900;fill:#fff;pointer-events:none;text-anchor:middle;dominant-baseline:central}
+ .floor-plan-container{display:flex;flex-direction:column;align-items:center;padding:12px;width:100%;height:100%;overflow:auto}
+ .floor-plan-svg{border-radius:8px;border:2px solid #1a3a5c;background:#0d1f38;cursor:pointer}
+ .floor-shelf{cursor:pointer}
+ .floor-label{font-family:Microsoft YaHei,sans-serif;font-weight:bold;fill:#ffffff;pointer-events:none;font-size:20px}
  .floor-label.empty{fill:#4a6080}
- .floor-hint{text-align:center;font-size:11px;color:#2a3a5a;padding:8px}
- .floor-tip{position:absolute;background:#0d1f38;border:1px solid #4cc9f0;color:#4cc9f0;padding:6px 10px;border-radius:6px;font-size:12px;pointer-events:none;display:none;z-index:100;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.5)}
-
+ .floor-hint{color:#4a6080;font-size:12px;margin-top:8px;text-align:center}
+ .floor-tip{position:absolute;background:rgba(13,31,56,.95);border:1px solid #1a3a5c;color:#ffffff;font-size:12px;padding:6px 12px;border-radius:6px;pointer-events:none;display:none;z-index:1000;white-space:nowrap}
+ .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;margin-left:8px}
+ .header-btn:hover{background:#0a2040;box-shadow:0 0 12px rgba(76,201,240,.3)}
  </style>
 </head>
 <body>
@@ -148,8 +147,8 @@
      <div class="data-info">支持 .xlsx / .xls 格式<br>表头需包含：料号、库位、品名、规格、可用量<br><span style="color:#9b59b6">✅ 支持同库位存放多种物料</span></div>
    </div>
    <div class="tip" id="boardTip" style="display:none">👆 点击货架 → 选择层数 → 点击货位查看详情</div>
-   <div id="floorPlanContainer" class="floor-plan-container" style="display:flex"></div>
  </div>
+ <div class="floor-plan-container" id="floorPlanContainer" style="display:none"></div>
  <div class="panel">
    <div class="panel-title" id="panelTitle">📃 库位详情</div>
    <div class="panel-hint" id="panelHint"><div class="panel-hint-icon">👆</div><div>点击左侧货架<br>查看层数和货位</div></div>
@@ -199,200 +198,6 @@ var KEY_NOTE = ["备注", "备注信息", "说明"];
 // DATA[code] = { code, items: [...], shelf, layer, pos }
 // items 数组支持同库位多物料
 var DATA = {};
-
-// ===== 平面图配置（从map.svg解析）=====
-var FLOOR_CONFIG = {
-  "svg_w": 1481,
-  "svg_h": 726,
-  "svg_file": "map.svg",
-  "shelves": {
-    "C": {"x":0,"y":0,"w":480,"h":60,"orient":"h"},
-    "D": {"x":480,"y":0,"w":320,"h":60,"orient":"h"},
-    "B": {"x":0,"y":80,"w":60,"h":640,"orient":"v"},
-    "F": {"x":140,"y":140,"w":60,"h":440,"orient":"v"},
-    "G": {"x":200,"y":140,"w":60,"h":440,"orient":"v"},
-    "I": {"x":410,"y":140,"w":60,"h":440,"orient":"v"},
-    "H": {"x":350,"y":140,"w":60,"h":440,"orient":"v"},
-    "K": {"x":625,"y":140,"w":60,"h":440,"orient":"v"},
-    "J": {"x":565,"y":140,"w":60,"h":440,"orient":"v"},
-    "E": {"x":900,"y":65,"w":60,"h":480,"orient":"v"},
-    "A": {"x":60,"y":660,"w":325,"h":60,"orient":"h"}
-  }
-};
-
-var _floorViewActive = false;
-
-function getShelfStatus(letter) {
-  var hasItems = false, hasCrit = false, hasLow = false;
-  for (var k in DATA) {
-    if (DATA[k].shelf !== letter) continue;
-    var items = DATA[k].items;
-    if (items.length === 0) continue;
-    hasItems = true;
-    for (var i = 0; i < items.length; i++) {
-      var q = items[i].qty || 0;
-      if (q > 0 && q <= 10) hasCrit = true;
-      else if (q > 10 && q <= 50) hasLow = true;
-    }
-  }
-  if (!hasItems) return "empty";
-  if (hasCrit) return "crit";
-  if (hasLow) return "low";
-  return "ok";
-}
-
-function getShelfFill(letter) {
-  var st = getShelfStatus(letter);
-  if (st === "crit") return "#d94040";
-  if (st === "low") return "#e09000";
-  if (st === "empty") return "#1c2d40";
-  return "#1e5080";
-}
-
-function getShelfBorder(letter) {
-  var st = getShelfStatus(letter);
-  if (st === "crit") return "#ff5c5c";
-  if (st === "low") return "#ffaa30";
-  if (st === "empty") return "#2a4a6a";
-  return "#67d8f0";
-}
-
-function getShelfStats(letter) {
-  var total = 0, occ = 0, crit = 0, low = 0;
-  for (var k in DATA) {
-    if (DATA[k].shelf !== letter) continue;
-    total++;
-    var items = DATA[k].items;
-    var hasOcc = items.some(function(it){ return it.name && it.qty > 0; });
-    var hasCrit = items.some(function(it){ return it.qty > 0 && it.qty <= 10; });
-    var hasLow = items.some(function(it){ return it.qty > 10 && it.qty <= 50; });
-    if (hasOcc) occ++;
-    if (hasCrit) crit++;
-    else if (hasLow) low++;
-  }
-  return {total: total, occ: occ, crit: crit, low: low};
-}
-
-function renderFloorPlan() {
-  var container = document.getElementById("floorPlanContainer");
-  var board = document.getElementById("board");
-  var cfg = FLOOR_CONFIG;
-  var svg_w = cfg.svg_w, svg_h = cfg.svg_h;
-  var svg_file = cfg.svg_file || "map.svg";
-
-  var boardW = board.clientWidth - 24;
-  var boardH = board.clientHeight - 24;
-  var scale = Math.min(boardW / svg_w, boardH / svg_h);
-  var dispW = Math.round(svg_w * scale);
-  var dispH = Math.round(svg_h * scale);
-
-  fetch(svg_file)
-    .then(function(r) { return r.text(); })
-    .then(function(svgText) {
-      var parser = new DOMParser();
-      var svgEl = parser.parseFromString(svgText, "image/svg+xml").documentElement;
-
-      svgEl.setAttribute("class", "floor-plan-svg");
-      svgEl.setAttribute("viewBox", "0 0 " + svg_w + " " + svg_h);
-      svgEl.style.width = "auto";
-      svgEl.style.height = "auto";
-      svgEl.style.maxWidth = "100%";
-      svgEl.style.maxHeight = "100%";
-
-      // Color each shelf rect (do NOT add labels - SVG already has shelf names)
-      for (var letter in cfg.shelves) {
-        var rect = svgEl.querySelector("#shelf-" + letter);
-        if (!rect) continue;
-
-        var fill = getShelfFill(letter);
-        var stroke = getShelfBorder(letter);
-        var stats = getShelfStats(letter);
-
-        rect.setAttribute("fill", fill);
-        rect.setAttribute("stroke", stroke);
-        rect.setAttribute("stroke-width", "3");
-
-        rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
-        rect.addEventListener("mouseover", (function(l, st) { return function(e) { floorTip(e, l, st.total, st.occ, st.crit, st.low); }; })(letter, stats));
-        rect.addEventListener("mouseout", floorHideTip);
-      }
-
-      var wrapper = document.createElement("div");
-      wrapper.style.position = "relative";
-      wrapper.style.display = "block";
-      wrapper.style.width = dispW + "px";
-      wrapper.style.height = dispH + "px";
-      wrapper.style.overflow = "hidden";
-      wrapper.appendChild(svgEl);
-
-      var hint = document.createElement("div");
-      hint.className = "floor-hint";
-      hint.textContent = "\ud83d\udccc \u70b9\u51fb\u8d27\u67b6\u8fdb\u5165\u5c42\u6570\u9009\u62e9";
-      wrapper.appendChild(hint);
-
-      var tip = document.createElement("div");
-      tip.id = "floorTip";
-      tip.className = "floor-tip";
-      wrapper.appendChild(tip);
-
-      container.innerHTML = "";
-      container.appendChild(wrapper);
-    })
-    .catch(function(err) {
-      container.innerHTML = '<div style="color:red;padding:20px;">\u5e73\u9762\u56fe\u52a0\u8f7d\u5931\u8d25: ' + err + '</div>';
-    });
-}
-
-function floorTip(e, letter, total, occ, crit, low) {
-  var tip = document.getElementById("floorTip");
-  if (!tip) return;
-  var parts = [];
-  if (total === 0) parts.push("空货架");
-  else {
-    parts.push("已占用 " + occ + "/" + total);
-    if (crit > 0) parts.push("⚠️ 告警 " + crit);
-    if (low > 0) parts.push("⚡ 低位 " + low);
-  }
-  tip.textContent = "货架" + letter + "：" + parts.join(" | ");
-  tip.style.display = "block";
-  var rect = e.target.closest('svg').getBoundingClientRect();
-  tip.style.left = (e.clientX - rect.left + 10) + "px";
-  tip.style.top = (e.clientY - rect.top - 30) + "px";
-}
-
-function floorHideTip() {
-  var tip = document.getElementById("floorTip");
-  if (tip) tip.style.display = "none";
-}
-
-function toggleView() {
-  var board = document.getElementById("board");
-  var shelves = board.querySelectorAll(".shelf");
-  var floorCont = document.getElementById("floorPlanContainer");
-  var tip = document.getElementById("boardTip");
-  var btn = document.getElementById("viewToggleBtn");
-
-  _floorViewActive = !_floorViewActive;
-
-  if (_floorViewActive) {
-    // Switch to floor plan view
-    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "none";
-    floorCont.style.display = "flex";
-    if (tip) tip.style.display = "none";
-    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
-    renderFloorPlan();
-  } else {
-    // Switch to shelf card view
-    for (var i = 0; i < shelves.length; i++) shelves[i].style.display = "";
-    floorCont.style.display = "none";
-    if (tip) tip.style.display = "block";
-    btn.textContent = "\ud83d\udcd0 \u5e73\u9762\u56fe";
-  }
-}
-
-
-
-
 
 // ===== 字段查找工具 =====
 function findKey(row, candidates) {
@@ -519,6 +324,17 @@ function loadExcel(file) {
       console.log("解析完成：", totalSlots, "个货位,", totalItems, "条物料记录, 货架:", shelfList);
 
       renderBoard(shelfList);
+      // 清空右侧面板
+      var list = document.getElementById("layerList");
+      if (list) list.innerHTML = "";
+      var pTitle = document.getElementById("panelTitle");
+      if (pTitle) pTitle.textContent = "📃 库位详情";
+      var pHint = document.getElementById("panelHint");
+      if (pHint) pHint.style.display = "";
+      // 平面图模式下重新渲染（更新颜色）
+      if (_floorViewActive) {
+        renderFloorPlan();
+      }
       updateStats();
       updateSafeAlertBtn();
       showToast("✅ 加载成功 " + totalSlots + " 货位/" + totalItems + " 物料 (" + file.name + ")");
@@ -562,13 +378,6 @@ function renderBoard(shelfList) {
 
   for (var si = 0; si < shelfList.length; si++) {
     renderPreview(shelfList[si]);
-  }
-  // Auto-switch to floor plan if config available
-  if (!_floorViewActive) {
-    var hasShelfConfig = Object.keys(FLOOR_CONFIG.shelves).length > 0;
-    if (hasShelfConfig) {
-      toggleView();
-    }
   }
 }
 
@@ -1135,6 +944,196 @@ document.addEventListener("keydown", function(e) {
   xhr.send();
 })();
 
+// ===== 平面图配置（从map.svg解析）=====
+var FLOOR_CONFIG = {
+  "svg_w": 1481,
+  "svg_h": 726,
+  "svg_file": "map.svg",
+  "shelves": {
+    "C": {"x":0,"y":0,"w":480,"h":60,"orient":"h"},
+    "D": {"x":480,"y":0,"w":320,"h":60,"orient":"h"},
+    "B": {"x":0,"y":80,"w":60,"h":640,"orient":"v"},
+    "F": {"x":140,"y":140,"w":60,"h":440,"orient":"v"},
+    "G": {"x":200,"y":140,"w":60,"h":440,"orient":"v"},
+    "I": {"x":410,"y":140,"w":60,"h":440,"orient":"v"},
+    "H": {"x":350,"y":140,"w":60,"h":440,"orient":"v"},
+    "K": {"x":625,"y":140,"w":60,"h":440,"orient":"v"},
+    "J": {"x":565,"y":140,"w":60,"h":440,"orient":"v"},
+    "E": {"x":900,"y":65,"w":60,"h":480,"orient":"v"},
+    "A": {"x":60,"y":660,"w":325,"h":60,"orient":"h"}
+  }
+};
+
+var _floorViewActive = true;
+
+function getShelfStatus(letter) {
+  var hasItems = false, hasCrit = false, hasLow = false;
+  for (var k in DATA) {
+    if (DATA[k].shelf !== letter) continue;
+    var items = DATA[k].items;
+    if (items.length === 0) continue;
+    hasItems = true;
+    for (var i = 0; i < items.length; i++) {
+      var q = items[i].qty || 0;
+      if (q > 0 && q <= 10) hasCrit = true;
+      else if (q > 10 && q <= 50) hasLow = true;
+    }
+  }
+  if (!hasItems) return "empty";
+  if (hasCrit) return "crit";
+  if (hasLow) return "low";
+  return "ok";
+}
+
+function getShelfFill(letter) {
+  var st = getShelfStatus(letter);
+  if (st === "crit") return "#d94040";
+  if (st === "low") return "#e09000";
+  if (st === "empty") return "#1c2d40";
+  return "#1e5080";
+}
+
+function getShelfBorder(letter) {
+  var st = getShelfStatus(letter);
+  if (st === "crit") return "#ff5c5c";
+  if (st === "low") return "#ffaa30";
+  if (st === "empty") return "#2a4a6a";
+  return "#67d8f0";
+}
+
+function getShelfStats(letter) {
+  var total = 0, occ = 0, crit = 0, low = 0;
+  for (var k in DATA) {
+    if (DATA[k].shelf !== letter) continue;
+    var items = DATA[k].items;
+    for (var i = 0; i < items.length; i++) {
+      total++;
+      var q = items[i].qty || 0;
+      if (q > 0) occ++;
+      if (q > 0 && q <= 10) crit++;
+      else if (q > 10 && q <= 50) low++;
+    }
+  }
+  return {total: total, occ: occ, crit: crit, low: low};
+}
+
+function renderFloorPlan() {
+  var container = document.getElementById("floorPlanContainer");
+  var board = document.getElementById("board");
+  var cfg = FLOOR_CONFIG;
+  var svg_w = cfg.svg_w, svg_h = cfg.svg_h;
+  var svg_file = cfg.svg_file || "map.svg";
+
+  var boardW = board.clientWidth - 24;
+  var boardH = board.clientHeight - 24;
+  var scale = Math.min(boardW / svg_w, boardH / svg_h);
+  var dispW = Math.round(svg_w * scale);
+  var dispH = Math.round(svg_h * scale);
+
+  fetch(svg_file)
+    .then(function(r) { return r.text(); })
+    .then(function(svgText) {
+      var parser = new DOMParser();
+      var svgEl = parser.parseFromString(svgText, "image/svg+xml").documentElement;
+
+      svgEl.setAttribute("class", "floor-plan-svg");
+      svgEl.setAttribute("viewBox", "0 0 " + svg_w + " " + svg_h);
+      svgEl.style.width = "auto";
+      svgEl.style.height = "auto";
+      svgEl.style.maxWidth = "100%";
+      svgEl.style.maxHeight = "100%";
+
+      for (var letter in cfg.shelves) {
+        var rect = svgEl.querySelector("#shelf-" + letter);
+        if (!rect) continue;
+
+        var fill = getShelfFill(letter);
+        var stroke = getShelfBorder(letter);
+        var stats = getShelfStats(letter);
+
+        rect.setAttribute("fill", fill);
+        rect.setAttribute("stroke", stroke);
+        rect.setAttribute("stroke-width", "3");
+
+        rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
+        rect.addEventListener("mouseover", (function(l, st) { return function(e) { floorTip(e, l, st.total, st.occ, st.crit, st.low); }; })(letter, stats));
+        rect.addEventListener("mouseout", floorHideTip);
+      }
+
+      var wrapper = document.createElement("div");
+      wrapper.style.position = "relative";
+      wrapper.style.display = "block";
+      wrapper.style.width = dispW + "px";
+      wrapper.style.height = dispH + "px";
+      wrapper.style.overflow = "hidden";
+      wrapper.appendChild(svgEl);
+
+      var hint = document.createElement("div");
+      hint.className = "floor-hint";
+      hint.textContent = "\ud83d\udccc \u70b9\u51fb\u8d27\u67b6\u8fdb\u5165\u5c42\u6570\u9009\u62e9";
+      wrapper.appendChild(hint);
+
+      var tip = document.createElement("div");
+      tip.id = "floorTip";
+      tip.className = "floor-tip";
+      wrapper.appendChild(tip);
+
+      container.innerHTML = "";
+      container.appendChild(wrapper);
+      // 显示平面图，隐藏货架视图
+      container.style.display = "flex";
+      var board = document.getElementById("board");
+      board.style.display = "none";
+    })
+    .catch(function(err) {
+      container.innerHTML = '<div style="color:red;padding:20px;">\u5e73\u9762\u56fe\u52a0\u8f7d\u5931\u8d25: ' + err + '</div>';
+    });
+}
+
+function floorTip(e, letter, total, occ, crit, low) {
+  var tip = document.getElementById("floorTip");
+  if (!tip) return;
+  var parts = [];
+  if (total === 0) parts.push("\u7a7a\u8d27\u67b6");
+  else {
+    parts.push("\u5df2\u5360\u7528 " + occ + "/" + total);
+    if (crit > 0) parts.push("\u26a0\ufe0f \u544a\u8b66 " + crit);
+    if (low > 0) parts.push("\u26a1 \u4f4e\u4f4d " + low);
+  }
+  tip.textContent = "\u8d27\u67b6" + letter + "\uff1a" + parts.join(" | ");
+  tip.style.display = "block";
+  var rect = e.target.closest('svg').getBoundingClientRect();
+  tip.style.left = (e.clientX - rect.left + 10) + "px";
+  tip.style.top = (e.clientY - rect.top - 30) + "px";
+}
+
+function floorHideTip() {
+  var tip = document.getElementById("floorTip");
+  if (tip) tip.style.display = "none";
+}
+
+function toggleView() {
+  var board = document.getElementById("board");
+  var floorCont = document.getElementById("floorPlanContainer");
+  var btn = document.getElementById("viewToggleBtn");
+
+  _floorViewActive = !_floorViewActive;
+
+  if (_floorViewActive) {
+    // 显示平面图
+    renderFloorPlan();
+    btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c2\u56fe";
+  } else {
+    // 显示货架视图
+    board.style.display = "";
+    floorCont.style.display = "none";
+    btn.textContent = "\ud83d\udcd0 \u5e73\u9762\u56fe";
+  }
+}
+
+
+
+
 // ===== 查询弹窗 =====
 var SEARCH_LIMIT = 20;
 var _searchAll = false;
@@ -1302,7 +1301,8 @@ function highlightSlot(loc) {
 // ===== ESC 关闭搜索弹窗 =====
 document.addEventListener("keydown", function(e) {
   if (e.key === "Escape") { closeModal(); closeSafeAlert(); closeSearch(); }
-});
+})
+window.onload = function() { renderFloorPlan(); };
 
 </script>
 <div class="modal-overlay" id="safeAlertOverlay">

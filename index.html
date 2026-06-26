@@ -1090,10 +1090,11 @@ function renderFloorPlan() {
         rect.setAttribute("stroke-width", strokeW);
         if (_focusShelf === letter) {
           rect.classList.add("svg-shelf-focus");
-          // 移至 SVG 根目录最末尾 → 保证 z-order 最顶层，glow 不被任何相邻货架遮挡
-          // 移整个 translate 组（rect 在组内，text 是 data-cell 同级兄弟），两者坐标系统一致
-          var g = rect.parentNode;
-          if (g) svgEl.appendChild(g);
+          // 移至 data-cell 末尾（text 组之后）→ 保证 z-order 在同 data-cell 内最高
+          // 注意：parentNode 是 translate 组，其 parentNode 才是 data-cell
+          var g = rect.parentNode;        // translate 组
+          var cell = g && g.parentNode;   // data-cell
+          if (cell) cell.appendChild(g);
         } else {
           rect.classList.remove("svg-shelf-focus");
         }

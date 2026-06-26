@@ -1086,8 +1086,9 @@ function renderFloorPlan() {
         rect.setAttribute("stroke-width", strokeW);
         if (_focusShelf === letter) {
           rect.classList.add("svg-shelf-focus");
-          // 移至 SVG 最末尾 → 渲染在最上层，glow 不被相邻货架遮挡
-          svgEl.appendChild(rect);
+          // 移至同组末尾（而不是SVG根目录）→ 保留transform.z-order提升+位置不变
+          var parent = rect.parentNode;
+          if (parent) parent.appendChild(rect);
         } else {
           rect.classList.remove("svg-shelf-focus");
         }

@@ -1090,11 +1090,21 @@ function renderFloorPlan() {
         rect.setAttribute("stroke-width", strokeW);
         if (_focusShelf === letter) {
           rect.classList.add("svg-shelf-focus");
-          // 移至 data-cell 末尾（text 组之后）→ 保证 z-order 在同 data-cell 内最高
-          // 注意：parentNode 是 translate 组，其 parentNode 才是 data-cell
-          var g = rect.parentNode;        // translate 组
-          var cell = g && g.parentNode;   // data-cell
-          if (cell) cell.appendChild(g);
+          // 去掉 translate 组自身的 transform 并将偏移量合并进 rect 坐标，
+          // 然后移至 SVG 根目录 → rect 与 text 共享同一坐标系，高亮不被遮挡。
+          var g = rect.parentNode;
+          var m = g && g.getAttribute && g.getAttribute("transform");
+          if (m) {
+            var t = m.match(/translate\(([^,]+),?\s*([^)]*)\)/);
+            if (t) {
+              var tx = parseFloat(t[1]) || 0;
+              var ty = parseFloat(t[2]) || 0;
+              rect.setAttribute("x", parseFloat(rect.getAttribute("x")) + tx);
+              rect.setAttribute("y", parseFloat(rect.getAttribute("y")) + ty);
+              g.removeAttribute("transform");
+            }
+          }
+          svgEl.appendChild(g);
         } else {
           rect.classList.remove("svg-shelf-focus");
         }

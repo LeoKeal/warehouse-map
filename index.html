@@ -552,6 +552,10 @@ function showLayers(shelf) {
 
     list.appendChild(card);
   }
+  // 平面图模式下重新渲染（更新焦点高亮）
+  if (_floorViewActive) {
+    renderFloorPlan();
+  }
 }
 
 // ===== 弹窗详情（支持同库位多物料）=====

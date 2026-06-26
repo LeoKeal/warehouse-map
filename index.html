@@ -112,7 +112,7 @@
  .empty-board-icon{font-size:64px;opacity:.3}
  .data-info{color:#4cc9f0;font-size:12px;background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 16px;margin-top:4px}
  .floor-plan-container{display:flex;flex-direction:column;align-items:center;padding:12px;width:100%;height:100%;overflow:auto}
- .floor-plan-svg{border-radius:8px;border:2px solid #1a3a5c;background:#0d1f38;cursor:pointer}
+ .floor-plan-svg{border-radius:8px;border:2px solid #1a3a5c;background:#0d1f38;cursor:pointer} .svg-wrap{position:relative;display:inline-block;overflow:visible}
  .floor-shelf{cursor:pointer}
  /* 货架视图焦点：橙色发光呼吸动画 */
  .shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#ff9900!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
@@ -1046,10 +1046,10 @@ function renderFloorPlan() {
   var svg_w = cfg.svg_w, svg_h = cfg.svg_h;
   var svg_file = cfg.svg_file || "map.svg";
 
-  // 用容器实际尺寸；若未就绪则用窗口尺寸（减去右侧面板约360px）
-  var ctw = container.clientWidth || (window.innerWidth - 370) || 800;
-  var cth = container.clientHeight || (window.innerHeight - 80) || 600;
-  var scale = Math.min((ctw - 24) / svg_w, (cth - 24) / svg_h);
+  // 统一用窗口尺寸（减去顶部header和右侧panel），初始/切换时完全一致
+  var availW = (window.innerWidth || 800) - 0 - 370;
+  var availH = (window.innerHeight || 600) - 60 - 0;
+  var scale = Math.min(availW / svg_w, availH / svg_h);
   var dispW = Math.round(svg_w * scale);
   var dispH = Math.round(svg_h * scale);
 
@@ -1061,9 +1061,11 @@ function renderFloorPlan() {
 
       svgEl.setAttribute("class", "floor-plan-svg");
       svgEl.setAttribute("viewBox", "0 0 " + svg_w + " " + svg_h);
-      // 明确设置 SVG 尺寸（覆盖 auto）
+      // 设置 SVG 宽高（与 svgWrap 一致）
       svgEl.style.width = dispW + "px";
       svgEl.style.height = dispH + "px";
+      // 去掉 viewBox 等比限制，用 CSS 撑满
+      // viewBox 保留，确保 SVG 坐标系统正确映射到 dispW/dispH
 
       for (var letter in cfg.shelves) {
         var rect = svgEl.querySelector("#shelf-" + letter);
@@ -1088,23 +1090,38 @@ function renderFloorPlan() {
         rect.addEventListener("mouseout", floorHideTip);
       }
 
+      // 外层：裁剪（收住 hint/tip 不超出）
       var wrapper = document.createElement("div");
       wrapper.style.position = "relative";
       wrapper.style.display = "block";
       wrapper.style.width = dispW + "px";
       wrapper.style.height = dispH + "px";
-      wrapper.style.overflow = "hidden";
-      wrapper.appendChild(svgEl);
+      // overflow: visible 让 drop-shadow 完整显示（hint/tip 用 absolute 限制在 svgWrap 内）
+      wrapper.style.overflow = "visible";
 
+      // 内层：不禁 clip，让 drop-shadow/glow 完整显示
+      var svgWrap = document.createElement("div");
+      svgWrap.style.position = "relative";
+      svgWrap.style.display = "inline-block";
+      svgWrap.style.overflow = "visible";
+      svgWrap.style.width = dispW + "px";
+      svgWrap.style.height = dispH + "px";
+      svgWrap.appendChild(svgEl);
+      wrapper.appendChild(svgWrap);
+
+      // hint/tip 用 absolute 限制在 svgWrap 内，防止溢出
+      svgWrap.style.position = "relative";
       var hint = document.createElement("div");
       hint.className = "floor-hint";
+      hint.style.cssText = "position:absolute;bottom:8px;left:50%;transform:translateX(-50%);pointer-events:none";
       hint.textContent = "\ud83d\udccc \u70b9\u51fb\u8d27\u67b6\u8fdb\u5165\u5c42\u6570\u9009\u62e9";
-      wrapper.appendChild(hint);
+      svgWrap.appendChild(hint);
 
       var tip = document.createElement("div");
       tip.id = "floorTip";
       tip.className = "floor-tip";
-      wrapper.appendChild(tip);
+      tip.style.cssText = "position:absolute;pointer-events:none";
+      svgWrap.appendChild(tip);
 
       container.innerHTML = "";
       container.appendChild(wrapper);

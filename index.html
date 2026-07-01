@@ -150,7 +150,7 @@
    <div class="detail-btn-wrap"><button class="detail-btn" id="safeAlertBtn" onclick="showSafeAlertModal()">明细 <span id="safeAlertBadge" class="badge"></span></button></div>
  </div>
  <button class="header-btn" onclick="showSearchModal()">🔍 查询</button>
- <button class="header-btn" onclick="toggleView()" id="viewToggleBtn">📦 货架视图</button>
+ <button class="header-btn" onclick="toggleView()" id="viewToggleBtn">📐 平面图</button>
  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
 </header>
 <div class="main">
@@ -162,7 +162,7 @@
    </div>
    <div class="tip" id="boardTip" style="display:none">👆 点击货架 → 选择层数 → 点击货位查看详情</div>
  </div>
- <div class="floor-plan-container" id="floorPlanContainer" style="display:none"></div>
+ <div class="floor-plan-container" id="floorPlanContainer" style="display:flex"></div>
  <div class="panel">
    <div class="panel-title" id="panelTitle">📃 库位详情</div>
    <div class="panel-hint" id="panelHint"><div class="panel-hint-icon">👆</div><div>点击左侧货架<br>查看层数和货位</div></div>
@@ -551,6 +551,10 @@ function showLayers(shelf) {
     };
 
     list.appendChild(card);
+  }
+  // 平面图模式下重新渲染（更新焦点高亮）
+  if (_floorViewActive) {
+    renderFloorPlan();
   }
 }
 
@@ -987,7 +991,7 @@ var FLOOR_CONFIG = {
   }
 };
 
-var _floorViewActive = true;
+var _floorViewActive = false;
 
 function getShelfStatus(letter) {
   var hasItems = false, hasCrit = false, hasLow = false;
@@ -1014,7 +1018,7 @@ function getShelfFill(letter) {
   var st = getShelfStatus(letter);
   if (st === "crit") return "#d94040";
   if (st === "low") return "#e09000";
-  if (st === "empty") return "#1c2d40";
+  if (st === "empty") return "#253a50";
   return "#1e5080";
 }
 
@@ -1024,7 +1028,7 @@ function getShelfBorder(letter) {
   var st = getShelfStatus(letter);
   if (st === "crit") return "#ff5c5c";
   if (st === "low") return "#ffaa30";
-  if (st === "empty") return "#2a4a6a";
+  if (st === "empty") return "#3a5a7a";
   return "#67d8f0";
 }
 
@@ -1086,8 +1090,21 @@ function renderFloorPlan() {
         rect.setAttribute("stroke-width", strokeW);
         if (_focusShelf === letter) {
           rect.classList.add("svg-shelf-focus");
-          // 移至 SVG 最末尾 → 渲染在最上层，glow 不被相邻货架遮挡
-          svgEl.appendChild(rect);
+          // 去掉 translate 组自身的 transform 并将偏移量合并进 rect 坐标，
+          // 然后移至 SVG 根目录 → rect 与 text 共享同一坐标系，高亮不被遮挡。
+          var g = rect.parentNode;
+          var m = g && g.getAttribute && g.getAttribute("transform");
+          if (m) {
+            var t = m.match(/translate\(([^,]+),?\s*([^)]*)\)/);
+            if (t) {
+              var tx = parseFloat(t[1]) || 0;
+              var ty = parseFloat(t[2]) || 0;
+              rect.setAttribute("x", parseFloat(rect.getAttribute("x")) + tx);
+              rect.setAttribute("y", parseFloat(rect.getAttribute("y")) + ty);
+              g.removeAttribute("transform");
+            }
+          }
+          svgEl.appendChild(g);
         } else {
           rect.classList.remove("svg-shelf-focus");
         }

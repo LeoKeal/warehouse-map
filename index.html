@@ -1147,6 +1147,13 @@ function renderFloorPlan() {
         rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
         rect.addEventListener("mouseover", (function(l, st) { return function(e) { floorTip(e, l, st.total, st.occ, st.crit, st.low); }; })(letter, stats));
         rect.addEventListener("mouseout", floorHideTip);
+
+        // 给货架容器也添加点击事件（解决点击文字无效问题）
+        var cellId = rect.closest('g[data-cell-id]');
+        if (cellId) {
+          cellId.style.cursor = 'pointer';
+          cellId.addEventListener('click', (function(l) { return function(e) { e.stopPropagation(); showLayers(l); }; })(letter));
+        }
       }
 
       // 外层：裁剪（收住 hint/tip 不超出）

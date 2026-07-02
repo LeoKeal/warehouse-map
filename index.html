@@ -1176,6 +1176,9 @@ function renderFloorPlan() {
       container.style.display = "flex";
       var board = document.getElementById("board");
       board.style.display = "none";
+      // 更新按钮文字：当前是平面图模式，显示"货架视图"
+      var btn = document.getElementById("viewToggleBtn");
+      if (btn) btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
     })
     .catch(function(err) {
       container.innerHTML = '<div style="color:red;padding:20px;">\u5e73\u9762\u56fe\u52a0\u8f7d\u5931\u8d25: ' + err + '</div>';
@@ -1412,8 +1415,13 @@ document.addEventListener("keydown", function(e) {
   if (e.key === "Escape") { closeModal(); closeSafeAlert(); closeSearch(); clearFocus(); }
 })
 window.onload = function() {
-  // 不再自动渲染平面图，等待用户加载数据后再切换视图
-  // 初始显示货架视图，按钮文字正确
+  // 默认显示平面图
+  _floorViewActive = true;
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      renderFloorPlan();
+    });
+  });
 };
 
 </script>

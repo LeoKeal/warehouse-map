@@ -461,11 +461,8 @@ function calcStatsForLayer(locations) {
 // ===== 右侧层列表 =====
 function showLayers(shelf) {
   if (Object.keys(DATA).length === 0) { showToast("⚠️ 请先加载 Excel 数据"); return; }
-  // 平面图模式下，先清空焦点再设置（确保 renderFloorPlan 能获取到最新的 _focusShelf）
-  if (_floorViewActive) {
-    _focusShelf = null; // 清空旧焦点
-    _focusShelf = shelf; // 设置新焦点
-  }
+  // 设置焦点货架并重新渲染平面图（无论是否在平面图模式下）
+  _focusShelf = shelf;
   _focused = true;
   document.getElementById("panelHint").style.display = "none";
   var list = document.getElementById("layerList");
@@ -564,11 +561,11 @@ function showLayers(shelf) {
 
     list.appendChild(card);
   }
-  // 平面图模式下重新渲染（更新焦点高亮）
-  if (_floorViewActive) {
-    renderFloorPlan();
+    // 平面图模式下重新渲染（更新焦点高亮）
+    if (_floorViewActive) {
+      renderFloorPlan();
+    }
   }
-}
 
 // ===== 弹窗详情（支持同库位多物料）=====
 function showModal(loc) {
@@ -1415,12 +1412,8 @@ document.addEventListener("keydown", function(e) {
   if (e.key === "Escape") { closeModal(); closeSafeAlert(); closeSearch(); clearFocus(); }
 })
 window.onload = function() {
-  // 延迟到布局稳定后渲染平面图
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() {
-      renderFloorPlan();
-    });
-  });
+  // 不再自动渲染平面图，等待用户加载数据后再切换视图
+  // 初始显示货架视图，按钮文字正确
 };
 
 </script>

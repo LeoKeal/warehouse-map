@@ -559,25 +559,15 @@ function showLayers(shelf) {
       this.style.background = "#0a1830";
     };
 
-  // 更新焦点高亮
-  if (_floorViewActive) {
-    // 平面图模式：重新渲染平面图
-    renderFloorPlan();
-  } else {
-    // 货架视图模式：更新货架的高亮样式
-    var shelfDivs = document.querySelectorAll('.shelf');
-    for (var i = 0; i < shelfDivs.length; i++) {
-      var div = shelfDivs[i];
-      var shelfId = div.id ? div.id.replace('shelf-', '') : '';
-      if (shelfId && shelfId === _focusShelf) {
-        div.className = 'shelf shelf-focus';
-      } else {
-        div.className = 'shelf';
-      }
+    list.appendChild(card);
+  }
+    // 平面图模式下重新渲染（更新焦点高亮）
+    if (_floorViewActive) {
+      renderFloorPlan();
     }
-}
   }
 
+// ===== 弹窗详情（支持同库位多物料）=====
 function showModal(loc) {
   var items = loc.items;
   var body = document.getElementById("modalBody");

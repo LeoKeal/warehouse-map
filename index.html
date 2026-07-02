@@ -1110,29 +1110,29 @@ function renderFloorPlan() {
           var curY = parseFloat(rect.getAttribute("y")) || 0;
           var curW = parseFloat(rect.getAttribute("width")) || 100;
           var curH = parseFloat(rect.getAttribute("height")) || 50;
-          // 隐藏原始 rect，创建独立的高亮矩形
-          rect.style.display = 'none';
+          // 创建高亮矩形覆盖在 rect 上方（不要隐藏 rect，否则无法接收点击）
           var focusRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
           focusRect.setAttribute('x', curX);
           focusRect.setAttribute('y', curY);
           focusRect.setAttribute('width', curW);
           focusRect.setAttribute('height', curH);
           focusRect.setAttribute('fill', fill);
+          focusRect.setAttribute('fill-opacity', '0.5');
           focusRect.setAttribute('stroke', '#ff9900');
-          focusRect.setAttribute('stroke-width', '5');
+          focusRect.setAttribute('stroke-width', '6');
           focusRect.setAttribute('rx', '8');
           focusRect.classList.add('svg-shelf-focus');
-          focusRect.style.pointerEvents = 'none'; // 不拦截点击，让底层 rect 响应
+          // 高亮矩形不拦截鼠标事件，点击穿透到底层 rect
+          focusRect.style.pointerEvents = 'none';
           // 将高亮矩形插入到文字标签之前，这样文字能正常显示
           var textGroup = svgEl.querySelector('#shelf-text-group-' + letter);
-          if (textGroup) {
-            svgEl.insertBefore(focusRect, textGroup);
+          if (textGroup && textGroup.parentNode) {
+            textGroup.parentNode.insertBefore(focusRect, textGroup);
           } else {
             svgEl.appendChild(focusRect);
           }
         } else {
           rect.classList.remove("svg-shelf-focus");
-          rect.style.display = ''; // 非焦点货架恢复显示
         }
 
         rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));

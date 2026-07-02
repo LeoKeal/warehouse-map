@@ -269,7 +269,8 @@ function getSlotStatus(loc) {
 
 // ===== 加载 Excel =====
 function loadExcel(file) {
-  _focusShelf = null;
+  // 保存焦点货架，如果新数据中没有该货架会清空
+  var prevFocus = _focusShelf;
   _focused = false;
   document.getElementById("fileName").textContent = file.name;
   var reader = new FileReader();
@@ -347,7 +348,16 @@ function loadExcel(file) {
       var pHint = document.getElementById("panelHint");
       if (pHint) pHint.style.display = "";
       // 平面图模式下重新渲染（更新颜色）
+      // 检查焦点货架是否在新数据中存在，不存在则清空
+      if (prevFocus) {
+        var focusExists = false;
+        for (var k in DATA) {
+          if (DATA[k].shelf === prevFocus) { focusExists = true; break; }
+        }
+        if (!focusExists) _focusShelf = null;
+      }
       if (_floorViewActive) {
+        console.log('[loadExcel] 重新渲染平面图, _focusShelf=' + _focusShelf + ', _floorViewActive=' + _floorViewActive);
         renderFloorPlan();
       }
       updateStats();
@@ -451,9 +461,11 @@ function calcStatsForLayer(locations) {
 // ===== 右侧层列表 =====
 function showLayers(shelf) {
   if (Object.keys(DATA).length === 0) { showToast("⚠️ 请先加载 Excel 数据"); return; }
-  // 清除搜索高亮（除非是搜索跳转）
-  clearFocus();
-  _focusShelf = shelf;
+  // 平面图模式下，先清空焦点再设置（确保 renderFloorPlan 能获取到最新的 _focusShelf）
+  if (_floorViewActive) {
+    _focusShelf = null; // 清空旧焦点
+    _focusShelf = shelf; // 设置新焦点
+  }
   _focused = true;
   document.getElementById("panelHint").style.display = "none";
   var list = document.getElementById("layerList");
@@ -1004,14 +1016,17 @@ function getShelfStatus(letter) {
       var it = items[i];
       var q = it.qty || 0;
       var safe = it.safeQty || 0;
+      // 安全库存判断：q > 0（有库存）且 safe > 0（有安全库存设置）且 q < safe（低于安全库存）
       if (q > 0 && safe > 0 && q < safe) { hasCrit = true; }
       else if (q > 0 && safe > 0 && q < safe * 2) { hasLow = true; }
     }
   }
-  if (!hasItems) return "empty";
-  if (hasCrit) return "crit";
-  if (hasLow) return "low";
-  return "ok";
+  var result = !hasItems ? "empty" : hasCrit ? "crit" : hasLow ? "low" : "ok";
+  // 调试输出
+  if (typeof console !== 'undefined') {
+    console.log('[getShelfStatus] letter=' + letter + ', hasItems=' + hasItems + ', hasCrit=' + hasCrit + ', hasLow=' + hasLow + ' => ' + result);
+  }
+  return result;
 }
 
 function getShelfFill(letter) {
@@ -1090,23 +1105,34 @@ function renderFloorPlan() {
         rect.setAttribute("stroke-width", strokeW);
         if (_focusShelf === letter) {
           rect.classList.add("svg-shelf-focus");
-          // 去掉 translate 组自身的 transform 并将偏移量合并进 rect 坐标，
-          // 然后移至 SVG 根目录 → rect 与 text 共享同一坐标系，高亮不被遮挡。
-          var g = rect.parentNode;
-          var m = g && g.getAttribute && g.getAttribute("transform");
-          if (m) {
-            var t = m.match(/translate\(([^,]+),?\s*([^)]*)\)/);
-            if (t) {
-              var tx = parseFloat(t[1]) || 0;
-              var ty = parseFloat(t[2]) || 0;
-              rect.setAttribute("x", parseFloat(rect.getAttribute("x")) + tx);
-              rect.setAttribute("y", parseFloat(rect.getAttribute("y")) + ty);
-              g.removeAttribute("transform");
-            }
+          // 获取当前 rect 的坐标
+          var curX = parseFloat(rect.getAttribute("x")) || 0;
+          var curY = parseFloat(rect.getAttribute("y")) || 0;
+          var curW = parseFloat(rect.getAttribute("width")) || 100;
+          var curH = parseFloat(rect.getAttribute("height")) || 50;
+          // 隐藏原始 rect，创建独立的高亮矩形
+          rect.style.display = 'none';
+          var focusRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          focusRect.setAttribute('x', curX);
+          focusRect.setAttribute('y', curY);
+          focusRect.setAttribute('width', curW);
+          focusRect.setAttribute('height', curH);
+          focusRect.setAttribute('fill', fill);
+          focusRect.setAttribute('stroke', '#ff9900');
+          focusRect.setAttribute('stroke-width', '5');
+          focusRect.setAttribute('rx', '8');
+          focusRect.classList.add('svg-shelf-focus');
+          focusRect.style.pointerEvents = 'none'; // 不拦截点击，让底层 rect 响应
+          // 将高亮矩形插入到文字标签之前，这样文字能正常显示
+          var textGroup = svgEl.querySelector('#shelf-text-group-' + letter);
+          if (textGroup) {
+            svgEl.insertBefore(focusRect, textGroup);
+          } else {
+            svgEl.appendChild(focusRect);
           }
-          svgEl.appendChild(g);
         } else {
           rect.classList.remove("svg-shelf-focus");
+          rect.style.display = ''; // 非焦点货架恢复显示
         }
 
         rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));

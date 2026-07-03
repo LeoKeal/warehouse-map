@@ -98,16 +98,16 @@
  .safe-table .col-itemno{color:#9b59b6;font-size:11px}
  .safe-modal-msg{text-align:center;padding:20px;color:#2a3a5a;font-size:14px}
  .safe-modal-msg.ok{color:#27ae60}
- .search-table{width:100%;border-collapse:collapse;font-size:12px}
- .search-table th{background:#0a2040;color:#4cc9f0;padding:8px 10px;font-size:12px;border-bottom:1px solid #1a3a5c;position:sticky;top:0;z-index:10}lor:#4cc9f0;padding:8px 10px;text-align:left;font-weight:900;border-bottom:1px solid #1a3a5c;position:sticky;top:0}
- .search-table td{padding:7px 10px;border-bottom:1px solid #0f1a2e;color:#c0d0e0;vertical-align:middle}
+ .search-table{width:100%;border-collapse:collapse;font-size:14px}
+ .search-table th{background:#0a2040;color:#4cc9f0;padding:10px 12px;font-size:13px;border-bottom:1px solid #1a3a5c;position:sticky;top:0;z-index:10}
+ .search-table td{padding:9px 12px;border-bottom:1px solid #0f1a2e;color:#e8eef4;vertical-align:middle}
  .search-table tr:hover td{background:#0a1830;cursor:pointer}
  .search-table .col-loc{color:#4cc9f0;font-weight:bold;white-space:nowrap}
  .search-table .col-qty{text-align:right;font-weight:bold}
- .search-table .col-itemno{color:#9b59b6;font-size:11px}
- .search-table .truncated{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .search-table .col-itemno{color:#e0a0e0;font-size:12px}
+ .search-table .truncated{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  .search-table .truncated:hover{max-width:none;white-space:normal;word-break:break-all}
- .search-hl{animation:search-pulse 1s ease-in-out 3;box-shadow:0 0 14px #ff9900,0 0 6px #ff6600;border-color:#ff9900 !important;z-index:50}
+ .search-hl{animation:search-pulse 1s ease-in-out 3;background:#ff7700;color:#000;font-weight:900;padding:0 3px;border-radius:3px;box-shadow:0 0 10px #ff9900;border:1px solid #ff9900;z-index:50}
 @keyframes search-pulse{0%,100%{box-shadow:0 0 14px #ff9900}50%{box-shadow:0 0 24px #ffaa33}}
  .empty-board-icon{font-size:64px;opacity:.3}
  .data-info{color:#4cc9f0;font-size:12px;background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 16px;margin-top:4px}
@@ -160,7 +160,7 @@
      <div>请选择 Excel 数据源文件</div>
      <div class="data-info">支持 .xlsx / .xls 格式<br>表头需包含：料号、库位、品名、规格、可用量<br><span style="color:#9b59b6">✅ 支持同库位存放多种物料</span></div>
    </div>
-   <div class="tip" id="boardTip" style="display:none">👆 点击货架 → 选择层数 → 点击货位查看详情</div>
+   <div class="tip" id="boardTip" style="display:none"></div>
  </div>
  <div class="floor-plan-container" id="floorPlanContainer" style="display:flex"></div>
  <div class="panel">
@@ -1351,7 +1351,7 @@ function renderSearchResults(results, rawKw) {
   if (_searchAll && results.length > SEARCH_LIMIT) {
     hint.innerHTML = '共 <span style="color:#4cc9f0">' + results.length + '</span> 条，已显示全部';
   } else if (results.length > SEARCH_LIMIT) {
-    hint.innerHTML = '共 <span style="color:#4cc9f0">' + results.length + '</span> 条，默认显示前 <span style="color:#4cc9f0">' + SEARCH_LIMIT + '</span> 条，回车显示全部';
+    hint.textContent = '共 ' + results.length + ' 条匹配结果';
   } else {
     hint.textContent = '共 ' + results.length + ' 条匹配结果';
   }

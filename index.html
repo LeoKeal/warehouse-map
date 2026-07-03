@@ -259,7 +259,7 @@ function getSlotStatus(loc) {
   var topCls = "ms-occ", topColor = "#4cc9f0", topTip = "";
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
-    if (!it.name || it.qty === 0) continue;
+    if (!it.itemno || !it.name || it.qty === 0) continue;
     var safe = it.safeQty || 0;
     if (safe > 0 && it.qty < safe) {
       topCls = "ms-crit"; topColor = "#e74c3c";
@@ -275,6 +275,8 @@ function getSlotStatus(loc) {
     }
   }
   var tip = topTip || (items.length > 1 ? "共" + items.length + "种物料" : "空库位");
+  var isEmpty = topCls === "ms-occ" && topTip === "";
+  if (isEmpty) { topCls = "ms-empty"; topColor = "#5a6a7a"; }
   return { cls: topCls, tip: tip, color: topColor };
 }
 

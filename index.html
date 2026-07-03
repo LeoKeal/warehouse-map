@@ -29,206 +29,13 @@
  .layer-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
  .mini-slot{width:28px;height:20px;border-radius:3px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;position:relative}
  .ms-occ{border-color:#4cc9f0;background:#0a2040;color:#4cc9f0}
- .ms-empty{border-color:#1e2d3d;background:#111827;color:#334}
+ .ms-empty{border-color:#3a4a5a;background:#1a2535;color:#5a6a7a}
  .ms-low{border-color:#f4d03f;background:#2a2200;color:#f4d03f}
  .ms-crit{border-color:#e74c3c;background:#2a0000;color:#e74c3c;animation:pulse 1.5s infinite}
- .ms-multi{border-color:#9b59b6;background:#1a0a28;color:#9b59b6;animation:pulse-multi 2s infinite}
  @keyframes pulse{0%,100%{box-shadow:0 0 0 rgba(231,76,60,0)}50%{box-shadow:0 0 8px rgba(231,76,60,.4)}}
- @keyframes pulse-multi{0%,100%{box-shadow:0 0 0 rgba(155,89,182,0)}50%{box-shadow:0 0 8px rgba(155,89,182,.5)}}
- .multi-dot{position:absolute;bottom:1px;right:1px;width:7px;height:7px;background:#9b59b6;border-radius:50%;font-size:0;line-height:0}
- .panel{width:360px;background:#0d1f38;border-left:2px solid #1a3a5c;padding:20px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
- .panel-title{font-size:15px;color:#4cc9f0;font-weight:900;padding-bottom:12px;border-bottom:1px solid #1a3a5c;margin-bottom:16px}
- .panel-hint{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#2a3a5a;font-size:14px;gap:10px;text-align:center}
- .panel-hint-icon{font-size:48px;opacity:.3}
- .layer-list{display:flex;flex-direction:column;gap:8px}
- .layer-card{background:#0a1830;border:1px solid #1a3a5c;border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .2s}
- .layer-card:hover{border-color:#4cc9f0;background:#0a2040}
- .layer-card-title{font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
- .layer-card-count{font-size:11px;color:#888}
- .pos-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
  .pos-dot{width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;position:relative}
  .pos-dot:hover{transform:scale(1.15)}
- .multi-badge{position:absolute;top:-5px;right:-5px;min-width:12px;height:12px;background:#9b59b6;color:#fff;border-radius:6px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 2px}
- .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
- .modal-overlay.show{display:flex}
- .modal{background:linear-gradient(135deg,#0d1f38,#0a1628);border:2px solid #4cc9f0;border-radius:16px;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;max-height:85vh;display:flex;flex-direction:column}
- .modal-header{background:#0a2040;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a3a5c;flex-shrink:0}
- .modal-header h2{font-size:16px;color:#4cc9f0;font-weight:900}
- .modal-close{background:none;border:none;color:#888;font-size:22px;cursor:pointer}
- .modal-close:hover{color:#e94560}
- .modal-body{padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
- .modal-location{background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 14px;font-size:13px;color:#4cc9f0;font-weight:bold;text-align:center;flex-shrink:0}
- .modal-items-count{font-size:11px;color:#9b59b6;font-weight:normal;margin-left:8px}
- .modal-item-card{background:#0a1628;border:1px solid #1a3a5c;border-radius:8px;padding:10px 12px;transition:all .2s}
- .modal-item-card:hover{border-color:#4cc9f0}
- .modal-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
- .modal-item-name{font-size:13px;color:#4cc9f0;font-weight:bold;flex:1}
- .modal-item-qty{font-size:13px;font-weight:bold;padding:2px 8px;border-radius:10px}
- .modal-item-qty.low{background:#2a2000;color:#f4d03f}
- .modal-item-qty.crit{background:#2a0000;color:#e74c3c;animation:badge-blink 1.5s infinite}
- .modal-item-qty.ok{background:#0a2040;color:#27ae60}
- .modal-item-qty.empty{background:#111827;color:#444}
- .modal-item-row{display:flex;gap:12px;font-size:12px;color:#6a8aaa}
- .modal-item-row span{color:#4cc9f0;font-weight:600}
- .modal-divider{height:1px;background:#0f3460;flex-shrink:0}
- .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0d1f38;border:2px solid #4cc9f0;color:#4cc9f0;padding:8px 22px;border-radius:10px;font-size:13px;opacity:0;transition:all .35s;pointer-events:none;z-index:9999}
- .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
- .tip{text-align:center;font-size:11px;color:#2a3a5a;padding:8px;width:100%}
- .header-actions{display:flex;align-items:center;gap:8px}
- .detail-btn-wrap{margin-left:12px;display:inline-block}
- .detail-btn{background:#1a0a20;border:1px solid #e74c3c;color:#e74c3c;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-weight:bold;transition:all .2s}
- .detail-btn:hover{background:#2a0010;box-shadow:0 0 8px rgba(231,76,60,.2)}
- .detail-btn .badge{display:inline-block;background:#e74c3c;color:#fff;border-radius:10px;font-size:10px;padding:0 5px;margin-left:4px;line-height:16px;min-width:16px;text-align:center}
- .stats-row{display:flex;align-items:center;gap:0;line-height:1}
- .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:bold;transition:all .2s;white-space:nowrap}
- .header-btn:hover{background:#0a2040;box-shadow:0 0 10px rgba(76,201,240,.25)}
- .header-btn.warn{color:#f39c12;border-color:#f39c12}
- .header-btn.warn:hover{background:#2a2000;box-shadow:0 0 10px rgba(243,156,18,.25)}
- .header-btn.warn.has-alert{color:#e74c3c;border-color:#e74c3c;animation:btn-blink 2s infinite}
- @keyframes btn-blink{0%,100%{opacity:1}50%{opacity:.7}}
- .safe-table{width:100%;border-collapse:collapse;font-size:12px}
- .safe-table th{background:#0a2040;color:#4cc9f0;padding:8px 10px;text-align:left;font-weight:900;border-bottom:1px solid #1a3a5c;position:sticky;top:0}
- .safe-table td{padding:8px 10px;border-bottom:1px solid #0f1a2e;color:#c0d0e0;vertical-align:middle}
- .safe-table tr:hover td{background:#0a1830}
- .safe-table .col-loc{color:#4cc9f0;font-weight:bold;white-space:nowrap}
- .safe-table .col-qty{text-align:right;font-weight:bold}
- .safe-table .crit .col-qty{color:#e74c3c}
- .safe-table .low .col-qty{color:#f39c12}
- .safe-table .col-safe{color:#888;text-align:right}
- .safe-table .col-itemno{color:#9b59b6;font-size:11px}
- .safe-modal-msg{text-align:center;padding:20px;color:#2a3a5a;font-size:14px}
- .safe-modal-msg.ok{color:#27ae60}
- .search-table{width:100%;border-collapse:collapse;font-size:14px}
- .search-table th{background:#0a2040;color:#4cc9f0;padding:10px 12px;font-size:13px;border-bottom:1px solid #1a3a5c;position:sticky;top:0;z-index:10}
- .search-table td{padding:9px 12px;border-bottom:1px solid #0f1a2e;color:#e8eef4;vertical-align:middle}
- .search-table tr:hover td{background:#0a1830;cursor:pointer}
- .search-table .col-loc{color:#4cc9f0;font-weight:bold;white-space:nowrap}
- .search-table .col-qty{text-align:right;font-weight:bold}
- .search-table .col-itemno{color:#e0a0e0;font-size:12px}
- .search-table .truncated{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
- .search-table .truncated:hover{max-width:none;white-space:normal;word-break:break-all}
- .search-hl{animation:search-pulse 1s ease-in-out 3;background:#ff7700;color:#000;font-weight:900;padding:0 3px;border-radius:3px;box-shadow:0 0 10px #ff9900;border:1px solid #ff9900;z-index:50}
-@keyframes search-pulse{0%,100%{box-shadow:0 0 14px #ff9900}50%{box-shadow:0 0 24px #ffaa33}}
- .empty-board-icon{font-size:64px;opacity:.3}
- .data-info{color:#4cc9f0;font-size:12px;background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 16px;margin-top:4px}
- .floor-plan-container{display:flex;flex-direction:column;align-items:center;padding:12px;width:100%;height:100%;overflow:auto}
- .floor-plan-svg{border-radius:8px;border:2px solid #1a3a5c;background:#0d1f38;cursor:pointer} .svg-wrap{position:relative;display:inline-block;overflow:visible}
- .floor-shelf{cursor:pointer}
- /* 货架视图焦点：橙色发光呼吸动画 */
- .shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#ff9900!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
- @keyframes shelf-focus-pulse{0%,100%{box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}50%{box-shadow:0 0 28px rgba(255,153,0,.6),inset 0 0 28px rgba(255,153,0,.1)}}
-  /* 平面图焦点高亮矩形：橙色描边+呼吸脉冲动画 */
- .svg-shelf-focus{animation:svg-shelf-focus 2s ease-in-out infinite}
- @keyframes svg-shelf-focus{0%,100%{filter:drop-shadow(0 0 6px #ff9900)}50%{filter:drop-shadow(0 0 18px #ffaa33)}}
-
-.shelf-focus{background:linear-gradient(135deg,#0a2a1a,#0d3520)!important;border-color:#ff9900!important;box-shadow:0 0 20px rgba(255,153,0,.35),inset 0 0 20px rgba(255,153,0,.05);animation:shelf-focus-pulse 2s ease-in-out infinite}
- @keyframes shelf-focus-pulse{0%,100%{box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}50%{box-shadow:0 0 28px rgba(255,153,0,.6),inset 0 0 28px rgba(255,153,0,.1)}}
- /* 平面图SVG货架焦点动画 */
- .svg-shelf-focus{animation:svg-shelf-focus 2s ease-in-out infinite}
- @keyframes svg-shelf-focus{0%,100%{filter:drop-shadow(0 0 8px rgba(255,153,0,.7))}50%{filter:drop-shadow(0 0 22px rgba(255,180,0,.95))}}
-
- .floor-label{font-family:Microsoft YaHei,sans-serif;font-weight:bold;fill:#ffffff;pointer-events:none;font-size:20px}
- .floor-label.empty{fill:#4a6080}
- .floor-hint{color:#4a6080;font-size:12px;margin-top:8px;text-align:center}
- .floor-tip{position:absolute;background:rgba(13,31,56,.95);border:1px solid #1a3a5c;color:#ffffff;font-size:12px;padding:6px 12px;border-radius:6px;pointer-events:none;display:none;z-index:1000;white-space:nowrap}
- .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;margin-left:8px}
- .header-btn:hover{background:#0a2040;box-shadow:0 0 12px rgba(76,201,240,.3)}
- </style>
-</head>
-<body>
-<header>
- <div class="header-left">
-   <h1>📦 仓库库位看板</h1>
-   <label class="file-btn" id="fileBtn">
-    📂 选择Excel文件
-    <input type="file" accept=".xlsx,.xls" id="fileInput" />
-   </label>
-   <span class="file-name" id="fileName"></span>
- </div>
- <div class="stats stats-row">
-   总库位 <span id="s-total">0</span> · 已占用 <span id="s-occ" style="color:#27ae60">0</span> · 空闲 <span id="s-empty" style="color:#4a6080">0</span> · 库存告警 <span id="s-alert" style="color:#e74c3c">0</span>
-   <div class="detail-btn-wrap"><button class="detail-btn" id="safeAlertBtn" onclick="showSafeAlertModal()">明细 <span id="safeAlertBadge" class="badge"></span></button></div>
- </div>
- <button class="header-btn" onclick="showSearchModal()">🔍 查询</button>
- <button class="header-btn" onclick="toggleView()" id="viewToggleBtn">📐 平面图</button>
- <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
-</header>
-<div class="main">
- <div class="board" id="board">
-   <div class="empty-board" id="emptyBoard">
-     <div class="empty-board-icon">📂</div>
-     <div>请选择 Excel 数据源文件</div>
-     <div class="data-info">支持 .xlsx / .xls 格式<br>表头需包含：料号、库位、品名、规格、可用量<br><span style="color:#9b59b6">✅ 支持同库位存放多种物料</span></div>
-   </div>
-   <div class="tip" id="boardTip" style="display:none"></div>
- </div>
- <div class="floor-plan-container" id="floorPlanContainer" style="display:flex"></div>
- <div class="panel">
-   <div class="panel-title" id="panelTitle">📃 库位详情</div>
-   <div class="panel-hint" id="panelHint"><div class="panel-hint-icon">👆</div><div>点击左侧货架<br>查看层数和货位</div></div>
-   <div class="layer-list" id="layerList"></div>
- </div>
-</div>
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
- <div class="modal" onclick="event.stopPropagation()">
-   <div class="modal-header">
-     <h2 id="modalTitle">📦 货位详情</h2>
-     <button class="modal-close" onclick="closeModal()">×</button>
-   </div>
-   <div class="modal-body" id="modalBody">
-   </div>
- </div>
-</div>
-<div class="toast" id="toast"></div>
-<div class="modal-overlay" id="searchOverlay">
- <div class="modal" style="width:900px;max-height:85vh" onclick="event.stopPropagation()">
-  <div class="modal-header">
-   <h2>🔍 库位查询</h2>
-   <button class="modal-close" onclick="closeSearch()">×</button>
-  </div>
-  <div class="modal-body" style="padding:14px;gap:10px">
-   <div style="display:flex;gap:8px;align-items:center">
-    <input type="text" id="searchInput" placeholder="输入料号/品名/规格/库位/备注..." style="flex:1;background:#0a2040;border:1px solid #1a3a5c;color:#4cc9f0;padding:8px 12px;border-radius:8px;font-size:13px;outline:none" oninput="onSearchInput()" onkeydown="onSearchKeydown(event)" />
-    <button class="header-btn" style="background:#0a2040" onclick="doSearch(true)">搜索</button>
-   </div>
-   <div id="searchHint" style="text-align:center;font-size:12px;color:#2a3a5a;padding:8px">输入关键词实时搜索，支持料号/品名/规格/库位/备注</div>
-   <div id="searchBody" style="overflow-y:auto;height:460px"></div>
-  </div>
- </div>
-</div>
-<script>
-// ===== 字段名兼容列表（Excel表头可能的不同命名）=====
-var KEY_CODE = ["库位", "库位编码", "货位", "库位编号", "位置"];
-var KEY_ITEMNO = ["料号", "物料编号", "编码", "SKU", "商品编号"];
-var KEY_NAME = ["品名", "物料名称", "名称", "商品名称"];
-var KEY_SPEC = ["规格", "规格型号", "型号"];
-var KEY_QTY = ["可用量", "库存量", "数量", "可用库存", "当前库存"];
-var KEY_UNIT = ["单位", "计量单位", "UNIT", "单位(盒/根/个等)"];
-var KEY_IMG = ["图片", "物料图片", "图片路径", "照片", "图片URL"];
-var KEY_SAFE = ["安全库存", "安全库存量", "安全量", "最低库存", "最低库存量"];
-var KEY_NOTE = ["备注", "备注信息", "说明"];
-
-// ===== 全局数据 =====
-// DATA[code] = { code, items: [...], shelf, layer, pos }
-// items 数组支持同库位多物料
-var DATA = {};
-
-// ===== 字段查找工具 =====
-function findKey(row, candidates) {
-  // 1. 先精确匹配
-  for (var k of candidates) {
-    if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== "") return k;
-  }
-  // 2. 模糊匹配：忽略所有空格、大小写
-  var norm = function(s) { return String(s).replace(/\s+/g, "").toLowerCase(); };
-  var candNorm = {};
-  for (var ci = 0; ci < candidates.length; ci++) candNorm[norm(candidates[ci])] = candidates[ci];
-  for (var rk in row) {
-    var n = norm(rk);
-    if (candNorm[n] && row[rk] !== undefined && row[rk] !== null && String(row[rk]).trim() !== "") return candNorm[n];
-  }
-  return null;
-}
+ .multi-badge{position:absolute;top:-5px;right:-5px;min-width:12px;height:12px;background:#4cc9f0;color:#000;border-radius:6px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 2px}
 function getVal(row, candidates, def) {
   var k = findKey(row, candidates);
   return k ? (String(row[k]).trim() || def) : def;
@@ -252,19 +59,32 @@ function convertCode(raw) {
 }
 
 // ===== 渲染货位色块的状态 =====
-// 返回 { cls, tip, isMulti }
+// 优先级：空货位 > 告警 > 正常有货
 function getSlotStatus(loc) {
   var items = loc.items;
-  if (items.length === 0) return { cls: "ms-empty", tip: "空库位", color: "#334" };
-  if (items.length > 1) {
-    return { cls: "ms-multi", tip: "共" + items.length + "种物料", color: "#9b59b6" };
+  if (items.length === 0) return { cls: "ms-empty", tip: "空库位", color: "#5a6a7a" };
+  // 遍历所有物料，找最高告警等级
+  var topCls = "ms-occ", topColor = "#4cc9f0", topTip = "";
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    if (!it.name || it.qty === 0) continue;
+    var safe = it.safeQty || 0;
+    if (safe > 0 && it.qty < safe) {
+      topCls = "ms-crit"; topColor = "#e74c3c";
+      topTip = it.name + " x" + it.qty + " ⚠️低于安全库存";
+      break; // 最高优先级，找到就停
+    }
+    if (safe > 0 && it.qty < safe * 2) {
+      topCls = "ms-low"; topColor = "#f4d03f";
+      topTip = it.name + " x" + it.qty;
+      // 不break，继续找是否有更高级别
+    } else if (topCls !== "ms-crit") {
+      topCls = "ms-occ"; topColor = "#4cc9f0";
+      topTip = it.name + " x" + it.qty;
+    }
   }
-  var it = items[0];
-  if (!it.name || it.qty === 0) return { cls: "ms-empty", tip: "空库位", color: "#334" };
-  var safe = it.safeQty || 0;
-  if (safe > 0 && it.qty < safe) return { cls: "ms-crit", tip: it.name + " x" + it.qty + " ⚠️低于安全库存", color: "#e74c3c" };
-  if (safe > 0 && it.qty < safe * 2) return { cls: "ms-low", tip: it.name + " x" + it.qty, color: "#f4d03f" };
-  return { cls: "ms-occ", tip: it.name + " x" + it.qty, color: "#4cc9f0" };
+  var tip = topTip || (items.length > 1 ? "共" + items.length + "种物料" : "空库位");
+  return { cls: topCls, tip: tip, color: topColor };
 }
 
 // ===== 加载 Excel =====
@@ -422,8 +242,7 @@ function renderPreview(shelf) {
     var layerItems = getLayerSlots(shelf, l);
     var hasMulti = layerItems.some(function(loc) { return loc.items.length > 1; });
     var st = calcStatsForLayer(layerItems);
-    var cls = st.crit > 0 ? "ms-crit" : st.low > 0 ? "ms-low" : st.occ > 0 ? "ms-occ" : "ms-empty";
-    if (hasMulti) cls = "ms-multi";
+   var cls = st.crit > 0 ? "ms-crit" : st.low > 0 ? "ms-low" : st.occ > 0 ? "ms-occ" : "ms-empty";
 
     var dot = document.createElement("div");
     dot.className = "mini-slot " + cls;
@@ -517,9 +336,8 @@ function showLayers(shelf) {
       dot.dataset.pos = loc.pos;
       var baseCss = "width:26px;height:26px;border-radius:5px;border:1px solid " + status.color + ";background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;position:relative;color:" + status.color + ";";
       if (status.cls === "ms-crit") baseCss += "animation:pulse 1.5s infinite;";
-      if (status.cls === "ms-multi") baseCss += "animation:pulse-multi 2s infinite;";
       dot.style.cssText = baseCss;
-      dot.textContent = (pnum < 10 ? "0" : "") + pnum;
+      dot.textContent = pnum;
       dot.title = (loc.disp || loc.code) + " " + status.tip;
       dot.onclick = (function(l) {
         return function(e) {
@@ -533,7 +351,7 @@ function showLayers(shelf) {
         var badge = document.createElement("div");
         badge.className = "multi-badge";
         badge.textContent = loc.items.length;
-        badge.style.cssText = "position:absolute;top:-4px;right:-4px;min-width:11px;height:11px;background:#9b59b6;color:#fff;border-radius:5px;font-size:6px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 1px;box-shadow:0 0 4px rgba(0,0,0,.5)";
+        badge.style.cssText = "position:absolute;top:-4px;right:-4px;min-width:11px;height:11px;background:" + status.color + ";color:#fff;border-radius:5px;font-size:6px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 1px;box-shadow:0 0 4px rgba(0,0,0,.5)";
         dot.appendChild(badge);
       }
 

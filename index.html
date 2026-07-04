@@ -133,9 +133,34 @@
  .floor-tip{position:absolute;background:rgba(13,31,56,.95);border:1px solid #1a3a5c;color:#ffffff;font-size:12px;padding:6px 12px;border-radius:6px;pointer-events:none;display:none;z-index:1000;white-space:nowrap}
  .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;margin-left:8px}
  .header-btn:hover{background:#0a2040;box-shadow:0 0 12px rgba(76,201,240,.3)}
+
+ /* ===== 拖放加载区 ===== */
+ .drop-overlay{position:fixed;inset:0;background:rgba(10,14,26,.97);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:20px;transition:all .3s}
+ .drop-overlay.show{display:flex}
+ .drop-zone{width:90%;max-width:560px;min-height:280px;border:3px dashed #4cc9f0;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(26,58,92,.15);transition:all .2s;cursor:pointer}
+ .drop-zone:hover,.drop-zone.drag-over{border-color:#e94560;background:rgba(233,69,96,.1);transform:scale(1.02)}
+ .drop-icon{font-size:64px;opacity:.8}
+ .drop-title{font-size:20px;color:#4cc9f0;font-weight:bold;text-align:center}
+ .drop-sub{font-size:13px;color:#6a8aaa;text-align:center;line-height:1.6}
+ .drop-btn{margin-top:8px;background:#1a3a5c;color:#4cc9f0;border:2px solid #4cc9f0;padding:10px 28px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:bold;transition:all .2s}
+ .drop-btn:hover{background:#0a2040;box-shadow:0 0 20px rgba(76,201,240,.3)}
+
  </style>
 </head>
 <body>
+<!-- 拖放加载区（file://协议下替代XMLHttpRequest） -->
+<div class="drop-overlay" id="dropOverlay">
+ <div class="drop-zone" id="dropZone">
+  <div class="drop-icon">📂</div>
+  <div class="drop-title">拖放 Excel 文件到这里</div>
+  <div class="drop-sub">
+   支持 .xlsx / .xls 格式<br>
+   更新数据：直接拖入新的 Excel 文件即可<br>
+   <span style="color:#9b59b6">无需服务器，直接双击打开</span>
+  </div>
+  <button class="drop-btn" onclick="document.getElementById('fileInput').click()">📂 选择文件...</button>
+ </div>
+</div>
 <header>
  <div class="header-left">
    <h1>📦 仓库库位看板</h1>
@@ -907,101 +932,45 @@ document.addEventListener("keydown", function(e) {
   if (e.key === "Escape") { closeModal(); closeSafeAlert(); }
 });
 
-// ===== 自动检测本地 data.xlsx / data.json =====
-// （同上版本，保留兼容性）
-(function autoLoad() {
-  // 优先尝试 xlsx
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", "data.xlsx?t=" + Date.now(), true);
-  xhr.onerror = function() {
-    // 降级尝试 json
-    var xhr2 = new XMLHttpRequest();
-    xhr2.open("GET", "data.json?t=" + Date.now(), true);
-    xhr2.onreadystatechange = function() {
-      if (xhr2.readyState === 4 && xhr2.status === 200) {
-        try {
-          var json = JSON.parse(xhr2.responseText);
-          DATA = {};
-          var shelves = new Set();
-          for (var i = 0; i < json.length; i++) {
-            var row = json[i];
-            var rawCode = row["库位编码"] || row["库位"] || row["code"] || "";
-            if (!rawCode) continue;
-            var conv = convertCode(rawCode);
-            if (!conv.code) continue;
-            var code = conv.code;
-            var qty = parseFloat(row["数量"] || row["可用量"] || "0") || 0;
-            var name = row["物料名称"] || row["品名"] || "";
-            var itemno = row["料号"] || "";
-            var spec = row["规格型号"] || row["规格"] || "";
-            var img = row["物料图片路径"] || "";
-            var note = row["备注"] || "";
-            var unit = row["单位"] || "";
-            var parts = code.split("-");
-            var shelf = parts[0] || "";
-            var layer = parts[1] ? parseInt(parts[1].replace("L", "")) : 1;
-            var pos = parts[2] ? parseInt(parts[2].replace("P", "")) : 1;
-            if (!DATA[code]) {
-              DATA[code] = { code: code, disp: conv.raw, shelf: shelf, layer: layer, pos: pos, items: [] };
-              shelves.add(shelf);
-            }
-            var safeQty = parseFloat(row["安全库存"] || "0") || 0;
-            DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, unit: unit, safeQty: safeQty, img: itemno ? "images/" + itemno + ".jpg" : "", note: note, _raw: { "单位": unit } });
-          }
-          var shelfList = Array.from(shelves).sort();
-          document.getElementById("fileName").textContent = "data.json (已自动加载)";
-          renderBoard(shelfList);
-          updateStats();
-          updateSafeAlertBtn();
-          showToast("✅ 自动加载 data.json，共 " + Object.keys(DATA).length + " 货位");
-        } catch(e) { console.log("json 解析失败:", e.message); }
-      }
-    };
-    xhr2.send();
-  };
-  xhr.onload = function() {
-    if (xhr.status === 200) {
-      try {
-        var workbook = XLSX.read(new Uint8Array(xhr.response), {type: "array"});
-        var json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""});
-        DATA = {};
-        var shelves = new Set();
-        for (var i = 0; i < json.length; i++) {
-          var row = json[i];
-          var conv = convertCode(getVal(row, KEY_CODE, ""));
-          if (!conv.code) continue;
-          var code = conv.code;
-          var item = {
-            itemno: getVal(row, KEY_ITEMNO, ""),
-            name: getVal(row, KEY_NAME, ""),
-            spec: getVal(row, KEY_SPEC, ""),
-            qty: parseFloat(getVal(row, KEY_QTY, "0")) || 0,
-            unit: getVal(row, KEY_UNIT, ""),
-            safeQty: parseFloat(getVal(row, KEY_SAFE, "0")) || 0,
-            img: getVal(row, KEY_IMG, ""),
-            note: getVal(row, KEY_NOTE, ""),
-            _raw: row
-          };
-          if (!DATA[code]) {
-            var parts = conv.raw.split("-");
-            DATA[code] = { code: code, disp: conv.raw, shelf: parts[0], layer: parseInt(parts[1].replace("L","")), pos: parseInt(parts[2].replace("P","")), items: [] };
-            shelves.add(parts[0]);
-          }
-          DATA[code].items.push(item);
-        }
-        var shelfList = Array.from(shelves).sort();
-        document.getElementById("fileName").textContent = "data.xlsx (已自动加载)";
-        renderBoard(shelfList);
-        updateStats();
-        updateSafeAlertBtn();
-        showToast("✅ 自动加载 data.xlsx，共 " + Object.keys(DATA).length + " 货位");
-      } catch(e) { console.log("xlsx 解析失败:", e.message); }
-    } else {
-      xhr.onerror();
+// ===== 拖放加载（兼容 file:// 协议）=====
+(function initDropLoad() {
+  var overlay = document.getElementById("dropOverlay");
+  var zone = document.getElementById("dropZone");
+  
+  // 显示拖放区
+  overlay.classList.add("show");
+  
+  // 拖放事件
+  function onDragOver(e) { e.preventDefault(); zone.classList.add("drag-over"); }
+  function onDragLeave(e) { e.preventDefault(); zone.classList.remove("drag-over"); }
+  function onDrop(e) {
+    e.preventDefault();
+    zone.classList.remove("drag-over");
+    var file = e.dataTransfer.files[0];
+    if (file && (file.name.endsWith(".xlsx") || file.name.endsWith(".xls"))) {
+      loadExcel(file);
     }
-  };
-  xhr.send();
+  }
+  overlay.addEventListener("dragover", onDragOver);
+  overlay.addEventListener("dragleave", onDragLeave);
+  overlay.addEventListener("drop", onDrop);
+  zone.addEventListener("dragover", onDragOver);
+  zone.addEventListener("dragleave", onDragLeave);
+  zone.addEventListener("drop", onDrop);
+  
+  // 点击选择文件（点击选择文件按钮也关闭overlay）
+  zone.addEventListener("click", function() {
+    // 用户会通过按钮触发 fileInput
+  });
 })();
+
+// loadExcel 成功后关闭拖放区
+var _origLoadExcel = loadExcel;
+loadExcel = function(file) {
+  _origLoadExcel.call(this, file);
+  var overlay = document.getElementById("dropOverlay");
+  if (overlay) overlay.classList.remove("show");
+};
 
 // ===== 平面图配置（从map.svg解析）=====
 var FLOOR_CONFIG = {

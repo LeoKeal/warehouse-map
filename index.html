@@ -976,7 +976,7 @@ loadExcel = function(file) {
 var FLOOR_CONFIG = {
   "svg_w": 1481,
   "svg_h": 726,
-  "svg_file": "map.svg",
+  "svg_file": "lib/map.svg",
   "shelves": {
     "C": {"x":0,"y":0,"w":480,"h":60,"orient":"h"},
     "D": {"x":480,"y":0,"w":320,"h":60,"orient":"h"},
@@ -1053,7 +1053,6 @@ function getShelfStats(letter) {
   return {total: total, occ: occ, crit: crit, low: low};
 }
 
-// 兼容 file:// 协议的 SVG 加载（fetch 不支持 file://，改用 FileReader）
 // 兼容 file:// 协议的 SVG 加载
 function loadSVGFile(filePath) {
   return new Promise(function(resolve, reject) {
@@ -1062,26 +1061,28 @@ function loadSVGFile(filePath) {
       .then(function(r) { return r.text(); })
       .then(resolve)
       .catch(function() {
-        // fetch 失败，使用同步 XHR（file:// 环境）
+        // fetch 失败，使用 file:// 绝对路径 + 同步 XHR（file:// 环境）
         try {
+          var path = location.pathname;
+          // 从 URL 路径提取目录部分（去掉文件名）
+          var dir = path.substring(0, path.lastIndexOf('/') + 1);
+          // 处理 Windows 路径（如 /Z:/HTML/index.html → file:///Z:/HTML/）
+          var driveMatch = dir.match(/^\/([A-Za-z]:)/);
+          var absPath;
+          if (driveMatch) {
+            absPath = 'file:///' + dir.substring(1) + filePath;
+          } else {
+            absPath = dir + filePath;
+          }
+          // 去除路径中的多余斜杠
+          absPath = absPath.replace(/\/\//g, '/');
           var xhr = new XMLHttpRequest();
-          xhr.open("GET", filePath, false); // 同步模式
+          xhr.open("GET", absPath, false); // 同步模式
           xhr.send();
           if (xhr.status === 200 && xhr.responseText) {
             resolve(xhr.responseText);
           } else {
-            // 同步 XHR 也失败，尝试从当前路径推断绝对路径
-            var path = location.pathname;
-            var dir = path.substring(0, path.lastIndexOf('/') + 1);
-            var absPath = dir + filePath;
-            var xhr2 = new XMLHttpRequest();
-            xhr2.open("GET", absPath, false);
-            xhr2.send();
-            if (xhr2.status === 200 && xhr2.responseText) {
-              resolve(xhr2.responseText);
-            } else {
-              reject(new Error("无法加载平面图: " + filePath));
-            }
+            reject(new Error("无法加载平面图: " + absPath));
           }
         } catch(e) {
           reject(e);

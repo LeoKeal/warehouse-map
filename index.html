@@ -4,7 +4,7 @@
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>仓库库位看板</title>
- <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+ <script src="lib/xlsx.full.min.js"></script>
  <style>
  *{margin:0;padding:0;box-sizing:border-box}
  body{background:#0a0e1a;font-family:Microsoft YaHei,PingFang SC,sans-serif;height:100vh;display:flex;flex-direction:column-reverse;overflow:hidden;user-select:none}
@@ -1053,6 +1053,37 @@ function getShelfStats(letter) {
   return {total: total, occ: occ, crit: crit, low: low};
 }
 
+// 兼容 file:// 协议的 SVG 加载（fetch 不支持 file://，改用 FileReader）
+function loadSVGFile(filePath) {
+  return new Promise(function(resolve, reject) {
+    // 优先尝试 fetch（HTTP服务器环境）
+    fetch(filePath)
+      .then(function(r) { return r.text(); })
+      .then(resolve)
+      .catch(function() {
+        // fetch 失败，尝试 FileReader（file:// 环境）
+        try {
+          var reader = new FileReader();
+          reader.onload = function(e) { resolve(e.target.result); };
+          reader.onerror = function() { reject(new Error("Failed to load SVG")); };
+          // 从当前页面路径推断文件目录
+          var basePath = location.pathname.replace(/[^/\\]*$/, '');
+          // 通过同步 XHR 读取本地文件（部分浏览器支持）
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", filePath, false); // false = 同步
+          xhr.send();
+          if (xhr.status === 200 || xhr.responseText) {
+            resolve(xhr.responseText);
+          } else {
+            reject(new Error("Cannot load SVG"));
+          }
+        } catch(e) {
+          reject(e);
+        }
+      });
+  });
+}
+
 function renderFloorPlan() {
   var container = document.getElementById("floorPlanContainer");
   var board = document.getElementById("board");
@@ -1067,8 +1098,7 @@ function renderFloorPlan() {
   var dispW = Math.round(svg_w * scale);
   var dispH = Math.round(svg_h * scale);
 
-  fetch(svg_file)
-    .then(function(r) { return r.text(); })
+  loadSVGFile(svg_file)
     .then(function(svgText) {
       var parser = new DOMParser();
       var svgEl = parser.parseFromString(svgText, "image/svg+xml").documentElement;

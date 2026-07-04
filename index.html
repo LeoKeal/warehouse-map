@@ -1054,6 +1054,7 @@ function getShelfStats(letter) {
 }
 
 // 兼容 file:// 协议的 SVG 加载（fetch 不支持 file://，改用 FileReader）
+// 兼容 file:// 协议的 SVG 加载
 function loadSVGFile(filePath) {
   return new Promise(function(resolve, reject) {
     // 优先尝试 fetch（HTTP服务器环境）
@@ -1061,21 +1062,26 @@ function loadSVGFile(filePath) {
       .then(function(r) { return r.text(); })
       .then(resolve)
       .catch(function() {
-        // fetch 失败，尝试 FileReader（file:// 环境）
+        // fetch 失败，使用同步 XHR（file:// 环境）
         try {
-          var reader = new FileReader();
-          reader.onload = function(e) { resolve(e.target.result); };
-          reader.onerror = function() { reject(new Error("Failed to load SVG")); };
-          // 从当前页面路径推断文件目录
-          var basePath = location.pathname.replace(/[^/\\]*$/, '');
-          // 通过同步 XHR 读取本地文件（部分浏览器支持）
           var xhr = new XMLHttpRequest();
-          xhr.open("GET", filePath, false); // false = 同步
+          xhr.open("GET", filePath, false); // 同步模式
           xhr.send();
-          if (xhr.status === 200 || xhr.responseText) {
+          if (xhr.status === 200 && xhr.responseText) {
             resolve(xhr.responseText);
           } else {
-            reject(new Error("Cannot load SVG"));
+            // 同步 XHR 也失败，尝试从当前路径推断绝对路径
+            var path = location.pathname;
+            var dir = path.substring(0, path.lastIndexOf('/') + 1);
+            var absPath = dir + filePath;
+            var xhr2 = new XMLHttpRequest();
+            xhr2.open("GET", absPath, false);
+            xhr2.send();
+            if (xhr2.status === 200 && xhr2.responseText) {
+              resolve(xhr2.responseText);
+            } else {
+              reject(new Error("无法加载平面图: " + filePath));
+            }
           }
         } catch(e) {
           reject(e);

@@ -281,6 +281,24 @@ function getSlotStatus(loc) {
 }
 
 // ===== 加载 Excel =====
+// ===== 保存 data.json 到服务器 =====
+function saveDataJson(json, totalSlots, totalItems) {
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", "/api/save", true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      console.log("data.json 已保存到服务器");
+    } else {
+      console.error("data.json 保存失败:", xhr.status, xhr.responseText);
+    }
+  };
+  xhr.onerror = function() {
+    console.error("data.json 保存失败: 网络错误");
+  };
+  xhr.send(JSON.stringify(json));
+}
+
 function loadExcel(file) {
   // 保存焦点货架，如果新数据中没有该货架会清空
   var prevFocus = _focusShelf;
@@ -376,6 +394,8 @@ function loadExcel(file) {
       updateStats();
       updateSafeAlertBtn();
       showToast("✅ 加载成功 " + totalSlots + " 货位/" + totalItems + " 物料 (" + file.name + ")");
+      // 保存 data.json
+      saveDataJson(json, totalSlots, totalItems);
     } catch(err) {
       showToast("❌ 解析失败：" + err.message);
       console.error(err);
@@ -907,98 +927,66 @@ document.addEventListener("keydown", function(e) {
   if (e.key === "Escape") { closeModal(); closeSafeAlert(); }
 });
 
-// ===== 自动检测本地 data.xlsx / data.json =====
-// （同上版本，保留兼容性）
+// ===== 启动时自动检测 data.json =====
 (function autoLoad() {
-  // 优先尝试 xlsx
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", "data.xlsx?t=" + Date.now(), true);
-  xhr.onerror = function() {
-    // 降级尝试 json
-    var xhr2 = new XMLHttpRequest();
-    xhr2.open("GET", "data.json?t=" + Date.now(), true);
-    xhr2.onreadystatechange = function() {
-      if (xhr2.readyState === 4 && xhr2.status === 200) {
-        try {
-          var json = JSON.parse(xhr2.responseText);
-          DATA = {};
-          var shelves = new Set();
-          for (var i = 0; i < json.length; i++) {
-            var row = json[i];
-            var rawCode = row["库位编码"] || row["库位"] || row["code"] || "";
-            if (!rawCode) continue;
-            var conv = convertCode(rawCode);
-            if (!conv.code) continue;
-            var code = conv.code;
-            var qty = parseFloat(row["数量"] || row["可用量"] || "0") || 0;
-            var name = row["物料名称"] || row["品名"] || "";
-            var itemno = row["料号"] || "";
-            var spec = row["规格型号"] || row["规格"] || "";
-            var img = row["物料图片路径"] || "";
-            var note = row["备注"] || "";
-            var unit = row["单位"] || "";
-            var parts = code.split("-");
-            var shelf = parts[0] || "";
-            var layer = parts[1] ? parseInt(parts[1].replace("L", "")) : 1;
-            var pos = parts[2] ? parseInt(parts[2].replace("P", "")) : 1;
-            if (!DATA[code]) {
-              DATA[code] = { code: code, disp: conv.raw, shelf: shelf, layer: layer, pos: pos, items: [] };
-              shelves.add(shelf);
-            }
-            var safeQty = parseFloat(row["安全库存"] || "0") || 0;
-            DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, unit: unit, safeQty: safeQty, img: itemno ? "images/" + itemno + ".jpg" : "", note: note, _raw: { "单位": unit } });
-          }
-          var shelfList = Array.from(shelves).sort();
-          document.getElementById("fileName").textContent = "data.json (已自动加载)";
-          renderBoard(shelfList);
-          updateStats();
-          updateSafeAlertBtn();
-          showToast("✅ 自动加载 data.json，共 " + Object.keys(DATA).length + " 货位");
-        } catch(e) { console.log("json 解析失败:", e.message); }
-      }
-    };
-    xhr2.send();
-  };
+  xhr.open("GET", "data.json?t=" + Date.now(), true);
   xhr.onload = function() {
     if (xhr.status === 200) {
+      // data.json 存在，直接加载
       try {
-        var workbook = XLSX.read(new Uint8Array(xhr.response), {type: "array"});
-        var json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""});
+        var json = JSON.parse(xhr.responseText);
         DATA = {};
         var shelves = new Set();
         for (var i = 0; i < json.length; i++) {
           var row = json[i];
-          var conv = convertCode(getVal(row, KEY_CODE, ""));
+          var rawCode = row["库位编码"] || row["库位"] || row["code"] || "";
+          if (!rawCode) continue;
+          var conv = convertCode(rawCode);
           if (!conv.code) continue;
           var code = conv.code;
-          var item = {
-            itemno: getVal(row, KEY_ITEMNO, ""),
-            name: getVal(row, KEY_NAME, ""),
-            spec: getVal(row, KEY_SPEC, ""),
-            qty: parseFloat(getVal(row, KEY_QTY, "0")) || 0,
-            unit: getVal(row, KEY_UNIT, ""),
-            safeQty: parseFloat(getVal(row, KEY_SAFE, "0")) || 0,
-            img: getVal(row, KEY_IMG, ""),
-            note: getVal(row, KEY_NOTE, ""),
-            _raw: row
-          };
+          var qty = parseFloat(row["数量"] || row["可用量"] || "0") || 0;
+          var name = row["物料名称"] || row["品名"] || "";
+          var itemno = row["料号"] || "";
+          var spec = row["规格型号"] || row["规格"] || "";
+          var img = row["物料图片路径"] || "";
+          var note = row["备注"] || "";
+          var unit = row["单位"] || "";
+          var parts = code.split("-");
+          var shelf = parts[0] || "";
+          var layer = parts[1] ? parseInt(parts[1].replace("L", "")) : 1;
+          var pos = parts[2] ? parseInt(parts[2].replace("P", "")) : 1;
           if (!DATA[code]) {
-            var parts = conv.raw.split("-");
-            DATA[code] = { code: code, disp: conv.raw, shelf: parts[0], layer: parseInt(parts[1].replace("L","")), pos: parseInt(parts[2].replace("P","")), items: [] };
-            shelves.add(parts[0]);
+            DATA[code] = { code: code, disp: conv.raw, shelf: shelf, layer: layer, pos: pos, items: [] };
+            shelves.add(shelf);
           }
-          DATA[code].items.push(item);
+          var safeQty = parseFloat(row["安全库存"] || "0") || 0;
+          DATA[code].items.push({ itemno: itemno, name: name, spec: spec, qty: qty, unit: unit, safeQty: safeQty, img: itemno ? "images/" + itemno + ".jpg" : "", note: note, _raw: { "单位": unit } });
         }
         var shelfList = Array.from(shelves).sort();
-        document.getElementById("fileName").textContent = "data.xlsx (已自动加载)";
+        document.getElementById("fileName").textContent = "data.json (已自动加载)";
         renderBoard(shelfList);
         updateStats();
         updateSafeAlertBtn();
-        showToast("✅ 自动加载 data.xlsx，共 " + Object.keys(DATA).length + " 货位");
-      } catch(e) { console.log("xlsx 解析失败:", e.message); }
+        showToast("✅ 已自动加载 data.json，共 " + Object.keys(DATA).length + " 货位");
+      } catch(e) {
+        console.error("data.json 解析失败:", e);
+        showToast("⚠️ data.json 格式有误，请重新上传 Excel");
+        setTimeout(function() { document.getElementById("fileInput").click(); }, 500);
+      }
+    } else if (xhr.status === 404) {
+      // data.json 不存在，提示选择 Excel
+      showToast("📂 未找到 data.json，请选择 Excel 文件");
+      setTimeout(function() { document.getElementById("fileInput").click(); }, 500);
     } else {
-      xhr.onerror();
+      // 网络错误，同样提示选择文件
+      showToast("⚠️ 加载失败，请手动选择 Excel 文件");
+      setTimeout(function() { document.getElementById("fileInput").click(); }, 500);
     }
+  };
+  xhr.onerror = function() {
+    showToast("⚠️ 网络异常，请手动选择 Excel 文件");
+    setTimeout(function() { document.getElementById("fileInput").click(); }, 500);
   };
   xhr.send();
 })();

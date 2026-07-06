@@ -314,7 +314,9 @@ function loadExcel(file) {
   reader.onload = function(e) {
     try {
       var data = new Uint8Array(e.target.result);
+      console.log("[loadExcel] 文件大小:", data.length, "字节");
       var workbook = XLSX.read(data, {type: "array", cellDates: true});
+      console.log("[loadExcel] XLSX.read 成功, sheet:", workbook.SheetNames);
       var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       var json = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
       
@@ -429,7 +431,7 @@ function loadExcel(file) {
       URL.revokeObjectURL(dlUrl);
       setTimeout(function() { showToast("✅ data.json 已下载，下次打开将自动加载"); }, 600);
     } catch(err) {
-      showToast("❌ 解析失败：" + err.message);
+      showToast("❌ 解析失败：" + err.message); console.error("[loadExcel ERROR]", err);
       console.error(err);
     }
   };

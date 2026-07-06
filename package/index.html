@@ -1101,130 +1101,130 @@ function renderFloorPlan() {
   fetch(svg_file)
     .then(function(r) { return r.text(); })
     .then(function(svgText) {
-      renderSvgEl(svgText, container, cfg, availW, availH, dispW, dispH);
+      var parser = new DOMParser();
+      var svgEl = parser.parseFromString(svgText, "image/svg+xml").documentElement;
+
+      svgEl.setAttribute("class", "floor-plan-svg");
+      svgEl.setAttribute("viewBox", "0 0 " + svg_w + " " + svg_h);
+      // 设置 SVG 宽高（与 svgWrap 一致）
+      svgEl.style.width = dispW + "px";
+      svgEl.style.height = dispH + "px";
+      // 去掉 viewBox 等比限制，用 CSS 撑满
+      // viewBox 保留，确保 SVG 坐标系统正确映射到 dispW/dispH
+
+      for (var letter in cfg.shelves) {
+        var rect = svgEl.querySelector("#shelf-" + letter);
+        if (!rect) continue;
+
+        var fill = getShelfFill(letter);
+        var stroke = getShelfBorder(letter);
+        var stats = getShelfStats(letter);
+        var strokeW = (_focusShelf === letter) ? "5" : "3";
+        rect.setAttribute("fill", fill);
+        rect.setAttribute("stroke", stroke);
+        rect.setAttribute("stroke-width", strokeW);
+        if (_focusShelf === letter) {
+          rect.classList.add("svg-shelf-focus");
+          // 获取当前 rect 的坐标
+          var curX = parseFloat(rect.getAttribute("x")) || 0;
+          var curY = parseFloat(rect.getAttribute("y")) || 0;
+          var curW = parseFloat(rect.getAttribute("width")) || 100;
+          var curH = parseFloat(rect.getAttribute("height")) || 50;
+          // 创建高亮矩形覆盖在 rect 上方（不要隐藏 rect，否则无法接收点击）
+          var focusRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          focusRect.setAttribute('x', curX);
+          focusRect.setAttribute('y', curY);
+          focusRect.setAttribute('width', curW);
+          focusRect.setAttribute('height', curH);
+          focusRect.setAttribute('fill', fill);
+          focusRect.setAttribute('fill-opacity', '0.5');
+          focusRect.setAttribute('stroke', '#ff9900');
+          focusRect.setAttribute('stroke-width', '6');
+          focusRect.setAttribute('rx', '8');
+          focusRect.classList.add('svg-shelf-focus');
+          // 高亮矩形不拦截鼠标事件，点击穿透到底层 rect
+          focusRect.style.pointerEvents = 'none';
+          // 将高亮矩形插入到文字标签之前，这样文字能正常显示
+          var textGroup = svgEl.querySelector('#shelf-text-group-' + letter);
+          if (textGroup && textGroup.parentNode) {
+            textGroup.parentNode.insertBefore(focusRect, textGroup);
+          } else {
+            svgEl.appendChild(focusRect);
+          }
+        } else {
+          rect.classList.remove("svg-shelf-focus");
+        }
+
+        rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
+        rect.addEventListener("mouseover", (function(l, st) { return function(e) { floorTip(e, l, st.total, st.occ, st.crit, st.low); }; })(letter, stats));
+        rect.addEventListener("mouseout", floorHideTip);
+
+        // 给货架容器也添加点击事件（解决点击文字无效问题）
+        var cellId = rect.closest('g[data-cell-id]');
+        if (cellId) {
+          cellId.style.cursor = 'pointer';
+          cellId.addEventListener('click', (function(l) { return function(e) { e.stopPropagation(); showLayers(l); }; })(letter));
+        }
+      }
+
+      // 外层：裁剪（收住 hint/tip 不超出）
+      var wrapper = document.createElement("div");
+      wrapper.style.position = "relative";
+      wrapper.style.display = "block";
+      wrapper.style.width = dispW + "px";
+      wrapper.style.height = dispH + "px";
+      // overflow: visible 让 drop-shadow 完整显示（hint/tip 用 absolute 限制在 svgWrap 内）
+      wrapper.style.overflow = "visible";
+
+      // 内层：不禁 clip，让 drop-shadow/glow 完整显示
+      var svgWrap = document.createElement("div");
+      svgWrap.style.position = "relative";
+      svgWrap.style.display = "inline-block";
+      svgWrap.style.overflow = "visible";
+      svgWrap.style.width = dispW + "px";
+      svgWrap.style.height = dispH + "px";
+      svgWrap.appendChild(svgEl);
+      wrapper.appendChild(svgWrap);
+
+      // hint/tip 用 absolute 限制在 svgWrap 内，防止溢出
+      svgWrap.style.position = "relative";
+      var hint = document.createElement("div");
+      hint.className = "floor-hint";
+      hint.style.cssText = "position:absolute;bottom:8px;left:50%;transform:translateX(-50%);pointer-events:none";
+      hint.textContent = "";
+      svgWrap.appendChild(hint);
+
+      // 指北针
+      var northArrow = document.createElement("div");
+      northArrow.style.cssText = "position:absolute;top:12px;right:14px;width:48px;height:48px;pointer-events:none;opacity:0.85";
+      northArrow.innerHTML = '<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" width="48" height="48">' +
+        '<circle cx="24" cy="24" r="22" fill="rgba(232,238,245,0.85)" stroke="#1a3a5c" stroke-width="1.5"/>' +
+        '<polygon points="24,6 30,38 24,32 18,38" fill="#e94560" stroke="#c03050" stroke-width="1" stroke-linejoin="round"/>' +
+        '<text x="24" y="18" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a3a5c" font-family="sans-serif">N</text>' +
+        '<text x="24" y="46" text-anchor="middle" font-size="8" fill="#1a3a5c" font-family="sans-serif">北</text>' +
+        '</svg>';
+      svgWrap.appendChild(northArrow);
+
+      var tip = document.createElement("div");
+      tip.id = "floorTip";
+      tip.className = "floor-tip";
+      tip.style.cssText = "position:absolute;pointer-events:none";
+      svgWrap.appendChild(tip);
+
+      container.innerHTML = "";
+      container.appendChild(wrapper);
+      // 显示平面图，隐藏货架视图
+      container.style.display = "flex";
+      var board = document.getElementById("board");
+      board.style.display = "none";
+      // 更新按钮文字：当前是平面图模式，显示"货架视图"
+      var btn = document.getElementById("viewToggleBtn");
+      if (btn) btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
     })
     .catch(function(err) {
-      // fetch失败（file://协议），尝试同步XHR fallback
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', svg_file, false);  // false=同步
-      xhr.send(null);
-      if (xhr.status === 0 || xhr.status === 200) {
-        renderSvgEl(xhr.responseText, container, cfg, availW, availH, dispW, dispH);
-        return;
-      }
-      // XHR也失败，显示友好提示
-      container.innerHTML = '<div style="color:#f39c12;padding:20px;text-align:center;">' +
-        '<div style="font-size:18px;margin-bottom:8px;">⚠️ fetch/XHR 均无法加载 SVG</div>' +
-        '<div style="font-size:13px;color:#aaa;">file:// 协议不支持网络请求<br>请用 <code style="background:#1a3a5c;padding:2px 6px;border-radius:4px;">python -m http.server</code> 启动本地服务</div>' +
-        '</div>';
+      container.innerHTML = '<div style="color:red;padding:20px;">\u5e73\u9762\u56fe\u52a0\u8f7d\u5931\u8d25: ' + err + '</div>';
     });
-
-function renderSvgEl(svgText, container, cfg, availW, availH, dispW, dispH) {
-  var svg_w = cfg.svg_w, svg_h = cfg.svg_h;
-  var parser = new DOMParser();
-  var svgEl = parser.parseFromString(svgText, "image/svg+xml").documentElement;
-
-  svgEl.setAttribute("class", "floor-plan-svg");
-  svgEl.setAttribute("viewBox", "0 0 " + svg_w + " " + svg_h);
-  svgEl.style.width = dispW + "px";
-  svgEl.style.height = dispH + "px";
-
-  for (var letter in cfg.shelves) {
-    var rect = svgEl.querySelector("#shelf-" + letter);
-    if (!rect) continue;
-    var fill = getShelfFill(letter);
-    var stroke = getShelfBorder(letter);
-    var stats = getShelfStats(letter);
-    var strokeW = (_focusShelf === letter) ? "5" : "3";
-    rect.setAttribute("fill", fill);
-    rect.setAttribute("stroke", stroke);
-    rect.setAttribute("stroke-width", strokeW);
-    if (_focusShelf === letter) {
-      rect.classList.add("svg-shelf-focus");
-      var curX = parseFloat(rect.getAttribute("x")) || 0;
-      var curY = parseFloat(rect.getAttribute("y")) || 0;
-      var curW = parseFloat(rect.getAttribute("width")) || 100;
-      var curH = parseFloat(rect.getAttribute("height")) || 50;
-      var focusRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      focusRect.setAttribute('x', curX);
-      focusRect.setAttribute('y', curY);
-      focusRect.setAttribute('width', curW);
-      focusRect.setAttribute('height', curH);
-      focusRect.setAttribute('fill', fill);
-      focusRect.setAttribute('fill-opacity', '0.5');
-      focusRect.setAttribute('stroke', '#ff9900');
-      focusRect.setAttribute('stroke-width', '6');
-      focusRect.setAttribute('rx', '8');
-      focusRect.classList.add('svg-shelf-focus');
-      focusRect.style.pointerEvents = 'none';
-      var textGroup = svgEl.querySelector('#shelf-text-group-' + letter);
-      if (textGroup && textGroup.parentNode) {
-        textGroup.parentNode.insertBefore(focusRect, textGroup);
-      } else {
-        svgEl.appendChild(focusRect);
-      }
-    } else {
-      rect.classList.remove("svg-shelf-focus");
-    }
-
-    rect.addEventListener("click", (function(l) { return function() { showLayers(l); }; })(letter));
-    rect.addEventListener("mouseover", (function(l, st) { return function(e) { floorTip(e, l, st.total, st.occ, st.crit, st.low); }; })(letter, stats));
-    rect.addEventListener("mouseout", floorHideTip);
-
-    var cellId = rect.closest('g[data-cell-id]');
-    if (cellId) {
-      cellId.style.cursor = 'pointer';
-      cellId.addEventListener('click', (function(l) { return function(e) { e.stopPropagation(); showLayers(l); }; })(letter));
-    }
-  }
-
-  var wrapper = document.createElement("div");
-  wrapper.style.position = "relative";
-  wrapper.style.display = "block";
-  wrapper.style.width = dispW + "px";
-  wrapper.style.height = dispH + "px";
-  wrapper.style.overflow = "visible";
-
-  var svgWrap = document.createElement("div");
-  svgWrap.style.position = "relative";
-  svgWrap.style.display = "inline-block";
-  svgWrap.style.overflow = "visible";
-  svgWrap.style.width = dispW + "px";
-  svgWrap.style.height = dispH + "px";
-  svgWrap.appendChild(svgEl);
-  wrapper.appendChild(svgWrap);
-
-  var hint = document.createElement("div");
-  hint.className = "floor-hint";
-  hint.style.cssText = "position:absolute;bottom:8px;left:50%;transform:translateX(-50%);pointer-events:none";
-  hint.textContent = "";
-  svgWrap.appendChild(hint);
-
-  var northArrow = document.createElement("div");
-  northArrow.style.cssText = "position:absolute;top:12px;right:14px;width:48px;height:48px;pointer-events:none;opacity:0.85";
-  northArrow.innerHTML = '<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" width="48" height="48">' +
-    '<circle cx="24" cy="24" r="22" fill="rgba(232,238,245,0.85)" stroke="#1a3a5c" stroke-width="1.5"/>' +
-    '<polygon points="24,6 30,38 24,32 18,38" fill="#e94560" stroke="#c03050" stroke-width="1" stroke-linejoin="round"/>' +
-    '<text x="24" y="18" text-anchor="middle" font-size="10" font-weight="bold" fill="#1a3a5c" font-family="sans-serif">N</text>' +
-    '<text x="24" y="46" text-anchor="middle" font-size="8" fill="#1a3a5c" font-family="sans-serif">&#x5317;</text>' +
-    '</svg>';
-  svgWrap.appendChild(northArrow);
-
-  var tip = document.createElement("div");
-  tip.id = "floorTip";
-  tip.className = "floor-tip";
-  tip.style.cssText = "position:absolute;pointer-events:none";
-  svgWrap.appendChild(tip);
-
-  container.innerHTML = "";
-  container.appendChild(wrapper);
-  container.style.display = "flex";
-  var board = document.getElementById("board");
-  board.style.display = "none";
-  var btn = document.getElementById("viewToggleBtn");
-  if (btn) btn.textContent = "\ud83d\udce6 \u8d27\u67b6\u89c6\u56fe";
 }
-
 
 function floorTip(e, letter, total, occ, crit, low) {
   var tip = document.getElementById("floorTip");

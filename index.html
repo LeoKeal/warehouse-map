@@ -313,9 +313,15 @@ function loadExcel(file) {
   var reader = new FileReader();
   reader.onload = function(e) {
     try {
+      if (typeof XLSX === "undefined") {
+        showToast("❌ xlsx 库未加载，请确认网络或刷新重试");
+        console.error("[loadExcel] XLSX 未定义！");
+        return;
+      }
       var data = new Uint8Array(e.target.result);
       console.log("[loadExcel] 文件大小:", data.length, "字节");
       var workbook = XLSX.read(data, {type: "array", cellDates: true});
+      console.log("[loadExcel] XLSX.read 成功, sheet:", workbook.SheetNames);
       console.log("[loadExcel] XLSX.read 成功, sheet:", workbook.SheetNames);
       var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       var json = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});

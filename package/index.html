@@ -42,12 +42,12 @@
  .panel-hint-icon{font-size:48px;opacity:.3}
  .layer-list{display:flex;flex-direction:column;gap:8px}
  .layer-card{background:#0a1830;border:1px solid #1a3a5c;border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .2s}
- .layer-card:hover{border-color:#4cc9f0;background:#0a2040}
+ .layer-card:hover,.layer-card.focused{border-color:#ff9900;background:#0a2040;box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}
  .layer-card-title{font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
  .layer-card-count{font-size:11px;color:#888}
  .pos-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
  .pos-dot{width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;position:relative}
- .pos-dot:hover{transform:scale(1.15)}
+ .ms-cell:hover,.ms-cell.focused{transform:scale(1.15);box-shadow:0 0 16px rgba(255,153,0,.4)}
  .multi-badge{position:absolute;top:-5px;right:-5px;min-width:12px;height:12px;background:#9b59b6;color:#fff;border-radius:6px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 2px}
  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
  .modal-overlay.show{display:flex}
@@ -658,7 +658,12 @@ function showLayers(shelf) {
     card.onmouseout = function() {
       this.style.borderColor = "#1a3a5c";
       this.style.background = "#0a1830";
+      this.style.boxShadow = "";
     };
+    // 焦点货架的层卡默认高亮
+    if (shelf === _focusShelf) {
+      card.classList.add("focused");
+    }
 
     list.appendChild(card);
   }
@@ -673,8 +678,13 @@ function showLayers(shelf) {
       var shelfId = div.id ? div.id.replace('shelf-', '') : '';
       if (shelfId && shelfId === _focusShelf) {
         div.className = 'shelf shelf-focus';
+        // 货架内货位按钮也加焦点样式
+        var cells = div.querySelectorAll('.ms-cell');
+        for (var j = 0; j < cells.length; j++) cells[j].classList.add('focused');
       } else {
         div.className = 'shelf';
+        var cells = div.querySelectorAll('.ms-cell');
+        for (var j = 0; j < cells.length; j++) cells[j].classList.remove('focused');
       }
     }
   }
@@ -1491,21 +1501,14 @@ function scrollToLayerCard(layer) {
 }
 
 function highlightSlot(loc) {
-  var dots = document.querySelectorAll(".pos-dot");
+  var dots = document.querySelectorAll(".ms-cell");
   for (var i = 0; i < dots.length; i++) {
     var title = dots[i].title || "";
-    // 同时匹配disp(原始格式如A-1-7)和code(内部格式如A-L1-P007)
     var searchKey = loc.disp || loc.code;
     if (title.indexOf(searchKey) === 0) {
       var el = dots[i];
-      el.style.boxShadow = "0 0 16px 4px #4cc9f0";
-      el.style.zIndex = "10";
-      el.style.transform = "scale(1.3)";
-      setTimeout(function() {
-        el.style.boxShadow = "";
-        el.style.zIndex = "";
-        el.style.transform = "";
-      }, 3000);
+      el.classList.add("focused");
+      setTimeout(function() { el.classList.remove("focused"); }, 3000);
       return;
     }
   }

@@ -32,6 +32,7 @@
  .ms-empty{border-color:#3a4a5a;background:#1a2535;color:#5a6a7a}
  .ms-low{border-color:#f4d03f;background:#2a2200;color:#f4d03f}
  .ms-crit{border-color:#e74c3c;background:#2a0000;color:#e74c3c;animation:pulse 1.5s infinite}
+.mini-slot.focused{border-color:#ff9900!important;background:#2a1a00!important;color:#ff9900!important;box-shadow:0 0 12px rgba(255,153,0,.4)}
 
  @keyframes pulse{0%,100%{box-shadow:0 0 0 rgba(231,76,60,0)}50%{box-shadow:0 0 8px rgba(231,76,60,.4)}}
 
@@ -47,7 +48,7 @@
  .layer-card-count{font-size:11px;color:#888}
  .pos-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
  .pos-dot{width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;position:relative}
- .ms-cell:hover,.ms-cell.focused{transform:scale(1.15);box-shadow:0 0 16px rgba(255,153,0,.4)}
+ .ms-cell:hover,.ms-cell.focused{border-color:#ff9900!important;transform:scale(1.15);box-shadow:0 0 16px rgba(255,153,0,.4)}
  .multi-badge{position:absolute;top:-5px;right:-5px;min-width:12px;height:12px;background:#9b59b6;color:#fff;border-radius:6px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 2px}
  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
  .modal-overlay.show{display:flex}
@@ -650,6 +651,25 @@ function showLayers(shelf) {
       var isHidden = this._grid.style.display === "none" || this._grid.style.display === "";
       this._grid.style.display = isHidden ? "flex" : "none";
       this._arrow.textContent = isHidden ? "▼" : "▶";
+      // 点击的层卡显示橙色焦点
+      if (isHidden) {
+        var allCards = list.querySelectorAll(".layer-card");
+        for (var k = 0; k < allCards.length; k++) {
+          allCards[k].classList.remove("focused");
+          allCards[k].style.borderColor = "#1a3a5c";
+          allCards[k].style.background = "#0a1830";
+          allCards[k].style.boxShadow = "";
+        }
+        this.classList.add("focused");
+        this.style.borderColor = "#ff9900";
+        this.style.background = "#0a2040";
+        this.style.boxShadow = "0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)";
+      } else {
+        this.classList.remove("focused");
+        this.style.borderColor = "#1a3a5c";
+        this.style.background = "#0a1830";
+        this.style.boxShadow = "";
+      }
     };
     card.onmouseover = function() {
       this.style.borderColor = "#4cc9f0";
@@ -660,10 +680,6 @@ function showLayers(shelf) {
       this.style.background = "#0a1830";
       this.style.boxShadow = "";
     };
-    // 焦点货架的层卡默认高亮
-    if (shelf === _focusShelf) {
-      card.classList.add("focused");
-    }
 
     list.appendChild(card);
   }
@@ -671,20 +687,24 @@ function showLayers(shelf) {
   if (_floorViewActive) {
     renderFloorPlan();
   } else {
-    // 货架视图模式：更新货架的高亮样式
+    // 货架视图模式：焦点货架的层卡指示器高亮
     var shelfDivs = document.querySelectorAll('.shelf');
     for (var i = 0; i < shelfDivs.length; i++) {
       var div = shelfDivs[i];
       var shelfId = div.id ? div.id.replace('shelf-', '') : '';
       if (shelfId && shelfId === _focusShelf) {
         div.className = 'shelf shelf-focus';
-        // 货架内货位按钮也加焦点样式
         var cells = div.querySelectorAll('.ms-cell');
         for (var j = 0; j < cells.length; j++) cells[j].classList.add('focused');
+        // 货架视图的mini-slot层指示器也高亮
+        var miniSlots = div.querySelectorAll('.mini-slot');
+        for (var m = 0; m < miniSlots.length; m++) miniSlots[m].classList.add('focused');
       } else {
         div.className = 'shelf';
         var cells = div.querySelectorAll('.ms-cell');
         for (var j = 0; j < cells.length; j++) cells[j].classList.remove('focused');
+        var miniSlots = div.querySelectorAll('.mini-slot');
+        for (var m = 0; m < miniSlots.length; m++) miniSlots[m].classList.remove('focused');
       }
     }
   }

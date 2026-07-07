@@ -8,9 +8,9 @@
  <style>
  *{margin:0;padding:0;box-sizing:border-box}
  body{background:#0a0e1a;font-family:Microsoft YaHei,PingFang SC,sans-serif;height:100vh;display:flex;flex-direction:column-reverse;overflow:hidden;user-select:none}
- header{background:#0d1525;border-top:2px solid #1a3a5c;border-bottom:none;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
- h1{font-size:18px;color:#4cc9f0;font-weight:900}
- .header-left{display:flex;align-items:center;gap:16px}
+ header{background:#0d1525;border-top:2px solid #1a3a5c;border-bottom:none;padding:clamp(6px,0.8vh,14px) clamp(12px,2vw,28px);display:flex;align-items:center;justify-content:space-between}
+ h1{font-size:clamp(14px,1.4vw,22px);color:#4cc9f0;font-weight:900}
+ .header-left{display:flex;align-items:center;gap:clamp(8px,1.2vw,20px)}
  .file-btn{display:flex;align-items:center;gap:8px;background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;transition:all .2s}
  .file-btn:hover{background:#0a2040;box-shadow:0 0 12px rgba(76,201,240,.3)}
  .file-btn input[type="file"]{display:none}
@@ -37,15 +37,15 @@
  @keyframes pulse{0%,100%{box-shadow:0 0 0 rgba(231,76,60,0)}50%{box-shadow:0 0 8px rgba(231,76,60,.4)}}
 
  .multi-dot{position:absolute;bottom:1px;right:1px;width:7px;height:7px;background:#9b59b6;border-radius:50%;font-size:0;line-height:0}
- .panel{width:360px;background:#0d1f38;border-left:2px solid #1a3a5c;padding:20px;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
- .panel-title{font-size:15px;color:#4cc9f0;font-weight:900;padding-bottom:12px;border-bottom:1px solid #1a3a5c;margin-bottom:16px}
- .panel-hint{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#2a3a5a;font-size:14px;gap:10px;text-align:center}
- .panel-hint-icon{font-size:48px;opacity:.3}
+ .panel{flex:0 0 20%;min-width:clamp(280px,18vw,440px);max-width:clamp(320px,22vw,520px);background:#0d1f38;border-left:2px solid #1a3a5c;padding:clamp(12px,1.5vw,24px);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
+ .panel-title{font-size:clamp(13px,1.1vw,18px);color:#4cc9f0;font-weight:900;padding-bottom:clamp(8px,1vh,14px);border-bottom:1px solid #1a3a5c;margin-bottom:clamp(10px,1.2vh,18px)}
+ .panel-hint{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#2a3a5a;font-size:clamp(12px,1vw,16px);gap:clamp(8px,1vh,14px);text-align:center}
+ .panel-hint-icon{font-size:clamp(36px,4vw,60px);opacity:.3}
  .layer-list{display:flex;flex-direction:column;gap:8px}
- .layer-card{background:#0a1830;border:1px solid #1a3a5c;border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .2s}
+ .layer-card{background:#0a1830;border:1px solid #1a3a5c;border-radius:10px;padding:clamp(10px,1.2vw,16px) clamp(12px,1.4vw,18px);margin-bottom:clamp(6px,0.8vh,10px);cursor:pointer}
  .layer-card.focused{border-color:#ff9900!important;box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}
- .layer-card-title{font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
- .layer-card-count{font-size:11px;color:#888}
+ .layer-card-title{font-size:clamp(12px,1vw,15px);font-weight:900;color:#4cc9f0;margin-bottom:clamp(6px,0.8vh,10px);display:flex;align-items:center;justify-content:space-between}
+ .layer-card-count{font-size:clamp(10px,0.85vw,13px);color:#888}
  .pos-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
  .pos-dot{width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;position:relative}
  .ms-cell:hover{transform:scale(1.15)}
@@ -53,36 +53,36 @@
  .multi-badge{position:absolute;top:-5px;right:-5px;min-width:12px;height:12px;background:#9b59b6;color:#fff;border-radius:6px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 2px}
  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
  .modal-overlay.show{display:flex}
- .modal{background:linear-gradient(135deg,#0d1f38,#0a1628);border:2px solid #4cc9f0;border-radius:16px;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;max-height:85vh;display:flex;flex-direction:column}
- .modal-header{background:#0a2040;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a3a5c;flex-shrink:0}
- .modal-header h2{font-size:16px;color:#4cc9f0;font-weight:900}
+ .modal{background:linear-gradient(135deg,#0d1f38,#0a1628);border:2px solid #4cc9f0;border-radius:16px;width:clamp(380px,40vw,640px);max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;max-height:88vh;display:flex;flex-direction:column}
+ .modal-header{background:#0a2040;padding:clamp(10px,1.2vh,18px) clamp(14px,2vw,24px);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a3a5c;flex-shrink:0}
+ .modal-header h2{font-size:clamp(14px,1.2vw,20px);color:#4cc9f0;font-weight:900}
  .modal-close{background:none;border:none;color:#888;font-size:22px;cursor:pointer}
  .modal-close:hover{color:#e94560}
- .modal-body{padding:18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
- .modal-location{background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 14px;font-size:13px;color:#4cc9f0;font-weight:bold;text-align:center;flex-shrink:0}
+ .modal-body{padding:clamp(12px,1.5vw,22px);display:flex;flex-direction:column;gap:clamp(8px,1vh,14px);overflow-y:auto}
+ .modal-location{background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:clamp(8px,1vh,14px) clamp(10px,1.4vw,18px);font-size:clamp(12px,1vw,15px);color:#4cc9f0;font-weight:bold;text-align:center;flex-shrink:0}
  .modal-items-count{font-size:11px;color:#9b59b6;font-weight:normal;margin-left:8px}
- .modal-item-card{background:#0a1628;border:1px solid #1a3a5c;border-radius:8px;padding:10px 12px;transition:all .2s}
+ .modal-item-card{background:#0a1628;border:1px solid #1a3a5c;border-radius:8px;padding:clamp(8px,1.1vw,14px) clamp(10px,1.2vw,16px);transition:all .2s}
  .modal-item-card:hover{border-color:#4cc9f0}
  .modal-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
- .modal-item-name{font-size:13px;color:#4cc9f0;font-weight:bold;flex:1}
- .modal-item-qty{font-size:13px;font-weight:bold;padding:2px 8px;border-radius:10px}
+ .modal-item-name{font-size:clamp(12px,1vw,15px);color:#4cc9f0;font-weight:bold;flex:1}
+ .modal-item-qty{font-size:clamp(11px,0.9vw,14px);font-weight:bold;padding:2px 8px;border-radius:10px}
  .modal-item-qty.low{background:#2a2000;color:#f4d03f}
  .modal-item-qty.crit{background:#2a0000;color:#e74c3c;animation:badge-blink 1.5s infinite}
  .modal-item-qty.ok{background:#0a2040;color:#27ae60}
  .modal-item-qty.empty{background:#111827;color:#444}
- .modal-item-row{display:flex;gap:12px;font-size:12px;color:#6a8aaa}
+ .modal-item-row{display:flex;gap:clamp(8px,1.2vw,16px);font-size:clamp(11px,0.9vw,13px);color:#6a8aaa}
  .modal-item-row span{color:#4cc9f0;font-weight:600}
  .modal-divider{height:1px;background:#0f3460;flex-shrink:0}
  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0d1f38;border:2px solid #4cc9f0;color:#4cc9f0;padding:8px 22px;border-radius:10px;font-size:13px;opacity:0;transition:all .35s;pointer-events:none;z-index:9999}
  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
  .tip{text-align:center;font-size:11px;color:#2a3a5a;padding:8px;width:100%}
- .header-actions{display:flex;align-items:center;gap:8px}
+ .header-actions{display:flex;align-items:center;gap:clamp(6px,0.8vw,12px)}
  .detail-btn-wrap{margin-left:12px;display:inline-block}
  .detail-btn{background:#1a0a20;border:1px solid #e74c3c;color:#e74c3c;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;font-weight:bold;transition:all .2s}
  .detail-btn:hover{background:#2a0010;box-shadow:0 0 8px rgba(231,76,60,.2)}
  .detail-btn .badge{display:inline-block;background:#e74c3c;color:#fff;border-radius:10px;font-size:10px;padding:0 5px;margin-left:4px;line-height:16px;min-width:16px;text-align:center}
  .stats-row{display:flex;align-items:center;gap:0;line-height:1}
- .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:bold;transition:all .2s;white-space:nowrap}
+ .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:clamp(4px,0.6vh,8px) clamp(10px,1.2vw,16px);border-radius:8px;cursor:pointer;font-size:clamp(11px,0.9vw,14px);font-weight:bold;transition:all .2s;white-space:nowrap}
  .header-btn:hover{background:#0a2040;box-shadow:0 0 10px rgba(76,201,240,.25)}
  .header-btn.warn{color:#f39c12;border-color:#f39c12}
  .header-btn.warn:hover{background:#2a2000;box-shadow:0 0 10px rgba(243,156,18,.25)}
@@ -100,18 +100,20 @@
  .safe-table .col-itemno{color:#9b59b6;font-size:11px}
  .safe-modal-msg{text-align:center;padding:20px;color:#2a3a5a;font-size:14px}
  .safe-modal-msg.ok{color:#27ae60}
- .search-table{width:100%;border-collapse:collapse;font-size:14px}
- .search-table th{background:#0a2040;color:#4cc9f0;padding:10px 12px;font-size:13px;border-bottom:1px solid #1a3a5c;position:sticky;top:0;z-index:10}
- .search-table td{padding:9px 12px;border-bottom:1px solid #0f1a2e;color:#e8eef4;vertical-align:middle}
+ .search-table{width:100%;border-collapse:collapse;font-size:clamp(12px,1vw,15px)}
+ .search-table th{background:#0a2040;color:#4cc9f0;padding:clamp(6px,0.8vh,10px) clamp(8px,1vw,12px);font-size:clamp(11px,0.9vw,14px);border-bottom:1px solid #1a3a5c;position:sticky;top:0;z-index:10}
+ .search-table td{padding:clamp(6px,0.8vh,10px) clamp(8px,1vw,12px);border-bottom:1px solid #0f1a2e;color:#e8eef4;vertical-align:middle}
  .search-table tr:hover td{background:#0a1830;cursor:pointer}
  .search-table .col-loc{color:#4cc9f0;font-weight:bold;white-space:nowrap}
  .search-table .col-qty{text-align:right;font-weight:bold}
  .search-table .col-itemno{color:#e0a0e0;font-size:12px}
- .search-table .truncated{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .search-table .truncated{max-width:clamp(80px,10vw,160px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  .search-table .truncated:hover{max-width:none;white-space:normal;word-break:break-all}
  .search-hl{animation:search-pulse 1s ease-in-out 3;background:#ff7700;color:#000;font-weight:900;padding:0 3px;border-radius:3px;box-shadow:0 0 10px #ff9900;border:1px solid #ff9900;z-index:50}
 @keyframes search-pulse{0%,100%{box-shadow:0 0 14px #ff9900}50%{box-shadow:0 0 24px #ffaa33}}
- /* ── 初始化引导界面 ─────────────────────────────── */
+ .fullscreen-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:clamp(4px,0.6vh,8px) clamp(10px,1.2vw,16px);border-radius:8px;cursor:pointer;font-size:clamp(11px,0.9vw,14px);font-weight:bold;transition:all .2s;white-space:nowrap;margin-left:6px}
+.fullscreen-btn:hover{background:#0a2040;box-shadow:0 0 10px rgba(76,201,240,.25)}
+/* ── 初始化引导界面 ─────────────────────────────── */
 .setup-screen {
   display: flex;
   flex-direction: column;
@@ -218,6 +220,7 @@
  <button class="header-btn" onclick="showSearchModal()">🔍 查询</button>
  <button class="header-btn" onclick="toggleView()" id="viewToggleBtn">📐 平面图</button>
  <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
+<button class="fullscreen-btn" onclick="toggleFullscreen()" id="fullscreenBtn">⛶ 全屏</button>
 </header>
 <div class="main">
  <div class="board" id="board">
@@ -1538,6 +1541,23 @@ function highlightSlot(loc) {
     }
   }
 }
+
+
+// ===== 全屏切换 =====
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(function() {});
+  } else {
+    document.exitFullscreen().catch(function() {});
+  }
+}
+document.addEventListener("fullscreenchange", function() {
+  var btn = document.getElementById("fullscreenBtn");
+  if (btn) {
+    btn.textContent = document.fullscreenElement ? "⛶ 退出" : "⛶ 全屏";
+  }
+});
+
 
 // ===== ESC 关闭搜索弹窗 =====
 document.addEventListener("keydown", function(e) {

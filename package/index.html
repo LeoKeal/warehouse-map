@@ -599,11 +599,6 @@ function showLayers(shelf) {
       (st.low > 0 ? " <span style='color:#f39c12'>⚡" + st.low + "</span>" : "");
     left.appendChild(countSpan);
     titleRow.appendChild(left);
-
-    var arrow = document.createElement("span");
-    arrow.textContent = "▼";
-    arrow.style.cssText = "font-size:10px;color:#4cc9f0;transition:transform .2s";
-    titleRow.appendChild(arrow);
     card.appendChild(titleRow);
 
     var grid = document.createElement("div");
@@ -624,17 +619,6 @@ function showLayers(shelf) {
       dot.style.cssText = baseCss;
       dot.textContent = pnum;
       dot.title = (loc.disp || loc.code) + " " + status.tip;
-      dot.onclick = (function(l, dotEl) {
-        return function(e) {
-          e.stopPropagation();
-          _focusedSlotCode = l.code;
-          // 切换ms-cell焦点状态
-          var allDots = list.querySelectorAll(".ms-cell");
-          for (var i = 0; i < allDots.length; i++) allDots[i].classList.remove("focused");
-          dotEl.classList.add("focused");
-          showModal(l);
-        };
-      })(loc, dot);
 
       // 多物料小圆点
       if (loc.items.length > 1) {
@@ -647,16 +631,38 @@ function showLayers(shelf) {
 
       dot.onmouseover = function() { this.style.transform = "scale(1.15)"; };
       dot.onmouseout = function() { this.style.transform = "scale(1)"; };
-      // 恢复货位按钮焦点状态
       if (_focusedSlotCode === loc.code) dot.classList.add("focused");
+
+      // 点击货位：高亮该货位，同时高亮所属层卡
+      dot.onclick = (function(l, dotEl) {
+        return function(e) {
+          e.stopPropagation();
+          _focusedSlotCode = l.code;
+          var allDots = list.querySelectorAll(".ms-cell");
+          for (var i = 0; i < allDots.length; i++) allDots[i].classList.remove("focused");
+          dotEl.classList.add("focused");
+          var allCards = list.querySelectorAll(".layer-card");
+          for (var k = 0; k < allCards.length; k++) {
+            allCards[k].classList.remove("focused");
+            allCards[k].style.borderColor = "#1a3a5c";
+            allCards[k].style.background = "#0a1830";
+            allCards[k].style.boxShadow = "";
+          }
+          card.classList.add("focused");
+          card.style.borderColor = "#ff9900";
+          card.style.background = "#0a2040";
+          card.style.boxShadow = "0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)";
+          showModal(l);
+        };
+      })(loc, dot);
+
       grid.appendChild(dot);
     }
 
     card.appendChild(grid);
     card._grid = grid;
-    card._arrow = arrow;
 
-    // 点击切换橙色焦点（不再展开/收起）
+    // 点击层卡：只高亮该层卡，清除货位焦点
     card.onclick = function() {
       var allCards = list.querySelectorAll(".layer-card");
       for (var k = 0; k < allCards.length; k++) {
@@ -669,14 +675,12 @@ function showLayers(shelf) {
       this.style.borderColor = "#ff9900";
       this.style.background = "#0a2040";
       this.style.boxShadow = "0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)";
+      var allDots = list.querySelectorAll(".ms-cell");
+      for (var i = 0; i < allDots.length; i++) allDots[i].classList.remove("focused");
     };
-    // 默认展开货位（始终显示）
-    card._grid.style.display = "flex";
 
     list.appendChild(card);
   }
-  // 更新焦点高亮
-  if (_floorViewActive) {
     renderFloorPlan();
   } else {
     // 货架视图模式：焦点货架的层卡指示器高亮

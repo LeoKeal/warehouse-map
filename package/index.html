@@ -43,12 +43,13 @@
  .panel-hint-icon{font-size:48px;opacity:.3}
  .layer-list{display:flex;flex-direction:column;gap:8px}
  .layer-card{background:#0a1830;border:1px solid #1a3a5c;border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .2s}
- .layer-card:hover,.layer-card.focused{border-color:#ff9900;background:#0a2040;box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}
+ .layer-card.focused{border-color:#ff9900!important;box-shadow:0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)}
  .layer-card-title{font-size:13px;font-weight:900;color:#4cc9f0;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
  .layer-card-count{font-size:11px;color:#888}
  .pos-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
  .pos-dot{width:26px;height:26px;border-radius:5px;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;transition:all .15s;position:relative}
- .ms-cell:hover,.ms-cell.focused{border-color:#ff9900!important;transform:scale(1.15);box-shadow:0 0 16px rgba(255,153,0,.4)}
+ .ms-cell:hover{transform:scale(1.15)}
+.ms-cell.focused{border-color:#ff9900!important;transform:scale(1.15);box-shadow:0 0 16px rgba(255,153,0,.4)}
  .multi-badge{position:absolute;top:-5px;right:-5px;min-width:12px;height:12px;background:#9b59b6;color:#fff;border-radius:6px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 2px}
  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
  .modal-overlay.show{display:flex}
@@ -600,7 +601,7 @@ function showLayers(shelf) {
     titleRow.appendChild(left);
 
     var arrow = document.createElement("span");
-    arrow.textContent = "▶";
+    arrow.textContent = "▼";
     arrow.style.cssText = "font-size:10px;color:#4cc9f0;transition:transform .2s";
     titleRow.appendChild(arrow);
     card.appendChild(titleRow);
@@ -623,12 +624,17 @@ function showLayers(shelf) {
       dot.style.cssText = baseCss;
       dot.textContent = pnum;
       dot.title = (loc.disp || loc.code) + " " + status.tip;
-      dot.onclick = (function(l) {
+      dot.onclick = (function(l, dotEl) {
         return function(e) {
           e.stopPropagation();
+          _focusedSlotCode = l.code;
+          // 切换ms-cell焦点状态
+          var allDots = list.querySelectorAll(".ms-cell");
+          for (var i = 0; i < allDots.length; i++) allDots[i].classList.remove("focused");
+          dotEl.classList.add("focused");
           showModal(l);
         };
-      })(loc);
+      })(loc, dot);
 
       // 多物料小圆点
       if (loc.items.length > 1) {
@@ -640,46 +646,32 @@ function showLayers(shelf) {
       }
 
       dot.onmouseover = function() { this.style.transform = "scale(1.15)"; };
-      dot.onmouseout = function() { this.style.transform = "scale(1)"; };      grid.appendChild(dot);
+      dot.onmouseout = function() { this.style.transform = "scale(1)"; };
+      // 恢复货位按钮焦点状态
+      if (_focusedSlotCode === loc.code) dot.classList.add("focused");
+      grid.appendChild(dot);
     }
 
     card.appendChild(grid);
     card._grid = grid;
     card._arrow = arrow;
 
+    // 点击切换橙色焦点（不再展开/收起）
     card.onclick = function() {
-      var isHidden = this._grid.style.display === "none" || this._grid.style.display === "";
-      this._grid.style.display = isHidden ? "flex" : "none";
-      this._arrow.textContent = isHidden ? "▼" : "▶";
-      // 点击的层卡显示橙色焦点
-      if (isHidden) {
-        var allCards = list.querySelectorAll(".layer-card");
-        for (var k = 0; k < allCards.length; k++) {
-          allCards[k].classList.remove("focused");
-          allCards[k].style.borderColor = "#1a3a5c";
-          allCards[k].style.background = "#0a1830";
-          allCards[k].style.boxShadow = "";
-        }
-        this.classList.add("focused");
-        this.style.borderColor = "#ff9900";
-        this.style.background = "#0a2040";
-        this.style.boxShadow = "0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)";
-      } else {
-        this.classList.remove("focused");
-        this.style.borderColor = "#1a3a5c";
-        this.style.background = "#0a1830";
-        this.style.boxShadow = "";
+      var allCards = list.querySelectorAll(".layer-card");
+      for (var k = 0; k < allCards.length; k++) {
+        allCards[k].classList.remove("focused");
+        allCards[k].style.borderColor = "#1a3a5c";
+        allCards[k].style.background = "#0a1830";
+        allCards[k].style.boxShadow = "";
       }
-    };
-    card.onmouseover = function() {
-      this.style.borderColor = "#4cc9f0";
+      this.classList.add("focused");
+      this.style.borderColor = "#ff9900";
       this.style.background = "#0a2040";
+      this.style.boxShadow = "0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)";
     };
-    card.onmouseout = function() {
-      this.style.borderColor = "#1a3a5c";
-      this.style.background = "#0a1830";
-      this.style.boxShadow = "";
-    };
+    // 默认展开货位（始终显示）
+    card._grid.style.display = "flex";
 
     list.appendChild(card);
   }
@@ -1367,6 +1359,7 @@ var SEARCH_LIMIT = 20;
 var _searchAll = false;
 var _focusShelf = null;         // 焦点货架（点击或搜索设置，覆盖式单选）
 var _focused = false;             // 是否处于焦点模式
+var _focusedSlotCode = null;      // 当前选中的货位代码（用于ms-cell橙色焦点）
 
 function showSearchModal() {
   if (Object.keys(DATA).length === 0) { showToast("\u26a0\ufe0f 请先加载数据"); return; }
@@ -1484,17 +1477,9 @@ function navigateToLoc(code, itemIndex) {
   _focusShelf = loc.shelf;
   _focused = true;
 
+  _focusedSlotCode = loc.code;
   showLayers(loc.shelf);
   setTimeout(function() {
-    var cards = document.querySelectorAll(".layer-card");
-    for (var ci = 0; ci < cards.length; ci++) {
-      var title = cards[ci].querySelector(".layer-card-title");
-      if (title && title.textContent.indexOf("第 " + loc.layer + " 层") !== -1) {
-        cards[ci]._grid.style.display = "flex";
-        cards[ci]._arrow.textContent = "\u25bc";
-        break;
-      }
-    }
     showModal(loc, itemIndex);
   }, 100);
 }
@@ -1502,7 +1487,7 @@ function navigateToLoc(code, itemIndex) {
 function clearFocus() {
   _focusShelf = null;
   _focused = false;
-  // 平面图焦点高亮由 renderFloorPlan 通过 class 处理
+  _focusedSlotCode = null;
 }
 
 

@@ -583,7 +583,7 @@ function showLayers(shelf) {
     if (slots.length === 0) continue;
     var st = calcStatsForLayer(slots);
 
-    var card = document.createElement("div");
+    let card = document.createElement("div");
     card.className = "layer-card";
     card.style.cssText = "background:#0a1830;border:1px solid #1a3a5c;border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer";
 
@@ -638,6 +638,7 @@ function showLayers(shelf) {
         return function(e) {
           e.stopPropagation();
           _focusedSlotCode = l.code;
+          _focusedLayer = l.layer;
           var allDots = list.querySelectorAll(".ms-cell");
           for (var i = 0; i < allDots.length; i++) allDots[i].classList.remove("focused");
           dotEl.classList.add("focused");
@@ -662,8 +663,18 @@ function showLayers(shelf) {
     card.appendChild(grid);
     card._grid = grid;
 
+    // 搜索跳转后恢复层卡焦点
+    if (_focusedLayer === L) {
+      card.classList.add("focused");
+      card.style.borderColor = "#ff9900";
+      card.style.background = "#0a2040";
+      card.style.boxShadow = "0 0 16px rgba(255,153,0,.35),inset 0 0 16px rgba(255,153,0,.05)";
+    }
+
     // 点击层卡：只高亮该层卡，清除货位焦点
     card.onclick = function() {
+      _focusedSlotCode = null;
+      _focusedLayer = L;
       var allCards = list.querySelectorAll(".layer-card");
       for (var k = 0; k < allCards.length; k++) {
         allCards[k].classList.remove("focused");
@@ -1366,6 +1377,7 @@ var _searchAll = false;
 var _focusShelf = null;         // 焦点货架（点击或搜索设置，覆盖式单选）
 var _focused = false;             // 是否处于焦点模式
 var _focusedSlotCode = null;      // 当前选中的货位代码（用于ms-cell橙色焦点）
+var _focusedLayer = null;         // 当前选中的层数（用于搜索跳转后层卡高亮）
 
 function showSearchModal() {
   if (Object.keys(DATA).length === 0) { showToast("\u26a0\ufe0f 请先加载数据"); return; }
@@ -1484,6 +1496,7 @@ function navigateToLoc(code, itemIndex) {
   _focused = true;
 
   _focusedSlotCode = loc.code;
+  _focusedLayer = loc.layer;
   showLayers(loc.shelf);
   setTimeout(function() {
     showModal(loc, itemIndex);
@@ -1494,6 +1507,7 @@ function clearFocus() {
   _focusShelf = null;
   _focused = false;
   _focusedSlotCode = null;
+  _focusedLayer = null;
 }
 
 

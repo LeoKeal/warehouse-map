@@ -1,0 +1,9 @@
+# 备份和临时文件
+backup/
+__pycache__/
+.git.broken/
+data.json
+
+# Python cache
+*.pyc
+*.pyo

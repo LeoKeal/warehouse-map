@@ -8,8 +8,8 @@
  <style>
  *{margin:0;padding:0;box-sizing:border-box}
  body{background:#0a0e1a;font-family:Microsoft YaHei,PingFang SC,sans-serif;height:100vh;display:flex;flex-direction:column-reverse;overflow:hidden;user-select:none}
- header{background:#0d1525;border-top:2px solid #1a3a5c;border-bottom:none;padding:clamp(6px,0.8vh,14px) clamp(12px,2vw,28px);display:flex;align-items:center;justify-content:space-between}
- h1{font-size:clamp(14px,1.4vw,22px);color:#4cc9f0;font-weight:900}
+ header{background:#0d1525;border-top:2px solid #1a3a5c;border-bottom:none;padding:clamp(10px,1.5vh,20px) clamp(12px,2vw,28px);min-height:clamp(52px,6vh,88px);display:flex;align-items:center;justify-content:space-between}
+ h1{font-size:clamp(16px,1.6vw,26px);color:#4cc9f0;font-weight:900}
  .header-left{display:flex;align-items:center;gap:clamp(8px,1.2vw,20px)}
  .file-btn{display:flex;align-items:center;gap:8px;background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;transition:all .2s}
  .file-btn:hover{background:#0a2040;box-shadow:0 0 12px rgba(76,201,240,.3)}
@@ -53,9 +53,9 @@
  .multi-badge{position:absolute;top:-5px;right:-5px;min-width:12px;height:12px;background:#9b59b6;color:#fff;border-radius:6px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:bold;line-height:1;padding:0 2px}
  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center}
  .modal-overlay.show{display:flex}
- .modal{background:linear-gradient(135deg,#0d1f38,#0a1628);border:2px solid #4cc9f0;border-radius:16px;width:clamp(380px,40vw,640px);max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;max-height:88vh;display:flex;flex-direction:column}
+ .modal{background:linear-gradient(135deg,#0d1f38,#0a1628);border:2px solid #4cc9f0;border-radius:16px;width:clamp(460px,52vw,860px);max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden;max-height:92vh;display:flex;flex-direction:column}
  .modal-header{background:#0a2040;padding:clamp(10px,1.2vh,18px) clamp(14px,2vw,24px);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1a3a5c;flex-shrink:0}
- .modal-header h2{font-size:clamp(14px,1.2vw,20px);color:#4cc9f0;font-weight:900}
+ .modal-header h2{font-size:clamp(15px,1.3vw,22px);color:#4cc9f0;font-weight:900}
  .modal-close{background:none;border:none;color:#888;font-size:22px;cursor:pointer}
  .modal-close:hover{color:#e94560}
  .modal-body{padding:clamp(12px,1.5vw,22px);display:flex;flex-direction:column;gap:clamp(8px,1vh,14px);overflow-y:auto}
@@ -82,7 +82,7 @@
  .detail-btn:hover{background:#2a0010;box-shadow:0 0 8px rgba(231,76,60,.2)}
  .detail-btn .badge{display:inline-block;background:#e74c3c;color:#fff;border-radius:10px;font-size:10px;padding:0 5px;margin-left:4px;line-height:16px;min-width:16px;text-align:center}
  .stats-row{display:flex;align-items:center;gap:0;line-height:1}
- .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:clamp(4px,0.6vh,8px) clamp(10px,1.2vw,16px);border-radius:8px;cursor:pointer;font-size:clamp(11px,0.9vw,14px);font-weight:bold;transition:all .2s;white-space:nowrap}
+ .header-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:clamp(8px,1vh,14px) clamp(14px,1.5vw,22px);border-radius:8px;cursor:pointer;font-size:clamp(13px,1.1vw,17px);font-weight:bold;transition:all .2s;white-space:nowrap}
  .header-btn:hover{background:#0a2040;box-shadow:0 0 10px rgba(76,201,240,.25)}
  .header-btn.warn{color:#f39c12;border-color:#f39c12}
  .header-btn.warn:hover{background:#2a2000;box-shadow:0 0 10px rgba(243,156,18,.25)}
@@ -111,7 +111,7 @@
  .search-table .truncated:hover{max-width:none;white-space:normal;word-break:break-all}
  .search-hl{animation:search-pulse 1s ease-in-out 3;background:#ff7700;color:#000;font-weight:900;padding:0 3px;border-radius:3px;box-shadow:0 0 10px #ff9900;border:1px solid #ff9900;z-index:50}
 @keyframes search-pulse{0%,100%{box-shadow:0 0 14px #ff9900}50%{box-shadow:0 0 24px #ffaa33}}
- .fullscreen-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:clamp(4px,0.6vh,8px) clamp(10px,1.2vw,16px);border-radius:8px;cursor:pointer;font-size:clamp(11px,0.9vw,14px);font-weight:bold;transition:all .2s;white-space:nowrap;margin-left:6px}
+ .fullscreen-btn{background:#1a3a5c;color:#4cc9f0;border:1px solid #4cc9f0;padding:clamp(8px,1vh,14px) clamp(14px,1.5vw,22px);border-radius:8px;cursor:pointer;font-size:clamp(13px,1.1vw,17px);font-weight:bold;transition:all .2s;white-space:nowrap;margin-left:6px}
 .fullscreen-btn:hover{background:#0a2040;box-shadow:0 0 10px rgba(76,201,240,.25)}
 /* ── 初始化引导界面 ─────────────────────────────── */
 .setup-screen {
@@ -219,7 +219,7 @@
  </div>
  <button class="header-btn" onclick="showSearchModal()">🔍 查询</button>
  <button class="header-btn" onclick="toggleView()" id="viewToggleBtn">📐 平面图</button>
- <button class="header-btn" onclick="document.getElementById('fileInput').click()">🔄 刷新</button>
+ <button class="header-btn" onclick="refreshWithFullscreen()">🔄 刷新</button>
 <button class="fullscreen-btn" onclick="toggleFullscreen()" id="fullscreenBtn">⛶ 全屏</button>
 </header>
 <div class="main">
@@ -1194,8 +1194,12 @@ function renderFloorPlan() {
   var svg_file = cfg.svg_file || "map.svg";
 
   // 统一用窗口尺寸（减去顶部header和右侧panel），初始/切换时完全一致
-  var availW = (window.innerWidth || 800) - 0 - 370;
-  var availH = (window.innerHeight || 600) - 60 - 50;
+  var panelEl = document.getElementById("panel");
+  var panelW = panelEl ? panelEl.offsetWidth : 300;
+  var headerEl = document.querySelector("header");
+  var headerH = headerEl ? headerEl.offsetHeight : 60;
+  var availW = (window.innerWidth || 800) - panelW - 4; // 4=左右border
+  var availH = (window.innerHeight || 600) - headerH - 4;
   var scale = Math.min(availW / svg_w, availH / svg_h);
   var dispW = Math.round(svg_w * scale);
   var dispH = Math.round(svg_h * scale);
@@ -1543,7 +1547,21 @@ function highlightSlot(loc) {
 }
 
 
-// ===== 全屏切换 =====
+// ===== 全屏模式下刷新文件（先退出全屏避免文件对话框问题）=====
+function refreshWithFullscreen() {
+  var wasFullscreen = !!document.fullscreenElement;
+  if (wasFullscreen) document.exitFullscreen().catch(function() {});
+  setTimeout(function() {
+    document.getElementById("fileInput").click();
+    if (wasFullscreen) {
+      setTimeout(function() {
+        document.documentElement.requestFullscreen().catch(function() {});
+      }, 600);
+    }
+  }, 150);
+}
+
+
 function toggleFullscreen() {
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen().catch(function() {});

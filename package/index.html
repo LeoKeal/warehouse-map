@@ -681,10 +681,13 @@ function showLayers(shelf) {
 }
 
 // ===== 弹窗详情（支持同库位多物料）=====
-function showModal(loc) {
+function showModal(loc, focusItemIndex) {
   var items = loc.items;
   var body = document.getElementById("modalBody");
   body.innerHTML = "";
+  var defaultFocus = (focusItemIndex !== undefined && focusItemIndex >= 0 && focusItemIndex < items.length)
+    ? focusItemIndex
+    : 0;
 
   document.getElementById("modalTitle").textContent = "📦 " + (loc.disp || loc.code);
 
@@ -736,10 +739,12 @@ function showModal(loc) {
     for (var c = 0; c < allCards.length; c++) {
       allCards[c].style.borderColor = "#1a3a5c";
       allCards[c].style.background = "#0a1628";
+      allCards[c].style.boxShadow = "none";
     }
     if (allCards[idx]) {
-      allCards[idx].style.borderColor = "#4cc9f0";
+      allCards[idx].style.borderColor = "#ff9900";
       allCards[idx].style.background = "#0a2040";
+      allCards[idx].style.boxShadow = "0 0 16px rgba(255,153,0,.35), inset 0 0 16px rgba(255,153,0,.05)";
     }
 
     // 切换图片
@@ -840,16 +845,8 @@ function showModal(loc) {
     body.appendChild(card);
   }
 
-  // ===== 默认选中第一个有图片的物料 =====
-  var firstWithImg = -1;
-  for (var i = 0; i < items.length; i++) {
-    if (items[i].img && items[i].img !== "" && items[i].img !== "物料图片路径") {
-      firstWithImg = i;
-      break;
-    }
-  }
-  if (firstWithImg === -1) firstWithImg = 0;
-  switchToItem(firstWithImg);
+  // ===== 默认选中指定物料或第一个 =====
+  switchToItem(defaultFocus);
 
   document.getElementById("modalOverlay").classList.add("show");
 }
@@ -1422,7 +1419,7 @@ function renderSearchResults(results, rawKw) {
     var qtyStyle = (it.qty > 0 && safe > 0 && it.qty < safe)
       ? (it.qty <= safe * 0.5 ? 'color:#e74c3c' : 'color:#f39c12')
       : '';
-    html += '<tr onclick="navigateToLoc(\'' + loc.code + '\')">' +
+    html += '<tr onclick="navigateToLoc(\'' + loc.code + '\', ' + i + ')">' +
       '<td class="col-loc">' + locStr + '</td>' +
       '<td class="col-itemno">' + hl(it.itemno || "\u2014", rawKw) + '</td>' +
       '<td class="truncated">' + hl(it.name || "\u2014", rawKw) + '</td>' +
@@ -1449,7 +1446,7 @@ function hl(text, kw) {
   return text.substring(0, idx) + '<span class="search-hl">' + text.substring(idx, idx + kw.length) + '</span>' + text.substring(idx + kw.length);
 }
 
-function navigateToLoc(code) {
+function navigateToLoc(code, itemIndex) {
   closeSearch();
   var loc = DATA[code];
   if (!loc) return;
@@ -1468,7 +1465,7 @@ function navigateToLoc(code) {
         break;
       }
     }
-    showModal(loc);
+    showModal(loc, itemIndex);
   }, 100);
 }
 

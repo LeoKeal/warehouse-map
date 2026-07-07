@@ -681,6 +681,8 @@ function showLayers(shelf) {
 
     list.appendChild(card);
   }
+  // 更新焦点高亮
+  if (_floorViewActive) {
     renderFloorPlan();
   } else {
     // 货架视图模式：焦点货架的层卡指示器高亮

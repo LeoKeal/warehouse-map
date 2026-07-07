@@ -109,7 +109,71 @@
  .search-table .truncated:hover{max-width:none;white-space:normal;word-break:break-all}
  .search-hl{animation:search-pulse 1s ease-in-out 3;background:#ff7700;color:#000;font-weight:900;padding:0 3px;border-radius:3px;box-shadow:0 0 10px #ff9900;border:1px solid #ff9900;z-index:50}
 @keyframes search-pulse{0%,100%{box-shadow:0 0 14px #ff9900}50%{box-shadow:0 0 24px #ffaa33}}
- .empty-board-icon{font-size:64px;opacity:.3}
+ /* ── 初始化引导界面 ─────────────────────────────── */
+.setup-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+  gap: 24px;
+  padding: 40px;
+  text-align: center;
+}
+.setup-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #4cc9f0;
+  margin-bottom: 4px;
+}
+.setup-sub {
+  color: #6b8aaa;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.setup-card {
+  background: #0f2847;
+  border: 1px solid #1a4a6e;
+  border-radius: 14px;
+  padding: 28px 32px;
+  width: 300px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+.setup-card:hover {
+  border-color: #4cc9f0;
+  box-shadow: 0 0 20px rgba(76,201,240,.15);
+  transform: translateY(-2px);
+}
+.setup-card-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+.setup-card-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #e0eaf5;
+  margin-bottom: 8px;
+}
+.setup-card-desc {
+  font-size: 13px;
+  color: #6b8aaa;
+  line-height: 1.6;
+}
+.loading-spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid #1a4a6e;
+  border-top-color: #4cc9f0;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-board-icon{font-size:64px;opacity:.3}
+.empty-board{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-height:400px}
  .data-info{color:#4cc9f0;font-size:12px;background:#0a2040;border:1px solid #1a3a5c;border-radius:8px;padding:10px 16px;margin-top:4px}
  .floor-plan-container{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;width:100%;height:100%;overflow:hidden}
  .floor-plan-svg{border-radius:8px;border:2px solid #1a3a5c;background:#0d1f38;cursor:pointer} .svg-wrap{position:relative;display:inline-block;overflow:visible}
@@ -156,9 +220,15 @@
 <div class="main">
  <div class="board" id="board">
    <div class="empty-board" id="emptyBoard">
-     <div class="empty-board-icon">📂</div>
-     <div>请选择 Excel 数据源文件</div>
-     <div class="data-info">支持 .xlsx / .xls 格式<br>表头需包含：料号、库位、品名、规格、可用量<br><span style="color:#9b59b6">✅ 支持同库位存放多种物料</span></div>
+     <div class="setup-screen" id="setupScreen">
+       <div class="setup-title">📦 仓库库位看板</div>
+       <div class="setup-sub">请选择 Excel 数据源以启动看板</div>
+       <div class="setup-card" onclick="document.getElementById('fileInput').click()">
+         <div class="setup-card-icon">📤</div>
+         <div class="setup-card-title">上传 Excel 文件</div>
+         <div class="setup-card-desc">选择本地的 .xlsx / .xls 文件上传到服务器<br>上传后数据会自动保存在服务器上</div>
+       </div>
+     </div>
    </div>
    <div class="tip" id="boardTip" style="display:none"></div>
  </div>
@@ -971,25 +1041,30 @@ document.addEventListener("keydown", function(e) {
         showToast("✅ 已自动加载 data.json，共 " + Object.keys(DATA).length + " 货位");
       } catch(e) {
         console.error("data.json 解析失败:", e);
-        showToast("⚠️ data.json 格式有误，请重新上传 Excel");
-        setTimeout(function() { document.getElementById("fileInput").click(); }, 500);
+        showToast("⚠️ data.json 格式有误，请重新选择数据源");
+        showSetupScreen();
       }
-    } else if (xhr.status === 404) {
-      // data.json 不存在，提示选择 Excel
-      showToast("📂 未找到 data.json，请选择 Excel 文件");
-      setTimeout(function() { document.getElementById("fileInput").click(); }, 500);
     } else {
-      // 网络错误，同样提示选择文件
-      showToast("⚠️ 加载失败，请手动选择 Excel 文件");
-      setTimeout(function() { document.getElementById("fileInput").click(); }, 500);
+      // data.json 不存在，显示引导界面
+      showSetupScreen();
     }
   };
   xhr.onerror = function() {
-    showToast("⚠️ 网络异常，请手动选择 Excel 文件");
-    setTimeout(function() { document.getElementById("fileInput").click(); }, 500);
+    showToast("⚠️ 网络异常，请检查服务是否运行中");
+    showSetupScreen();
   };
   xhr.send();
 })();
+
+// ===== 引导界面 ─────────────────────────────────
+function showSetupScreen() {
+  var empty = document.getElementById("emptyBoard");
+  if (!empty) return;
+  empty.style.display = "flex";
+  var setupScreen = document.getElementById("setupScreen");
+  if (setupScreen) setupScreen.style.display = "flex";
+}
+
 
 // ===== 平面图配置（从map.svg解析）=====
 var FLOOR_CONFIG = {

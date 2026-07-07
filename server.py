@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Python HTTP 服务器，支持：
-- 静态文件服务
-- POST /api/save 保存 data.json
-- 自动加载已存在的 data.json
+仓库看板 HTTP 服务器
+- 静态文件服务（index.html, JS, CSS, images 等）
+- GET  /data.json  → 返回已有 JSON 数据（不存在返回 404）
+- POST /api/save   → 接收前端 JSON 并写入 data.json
 """
 import http.server
 import json
@@ -33,6 +33,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self.send_response(500)
                 self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
         else:
@@ -47,10 +48,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
-        # 根路径 -> index.html
         if parsed.path == "/":
             self.path = "/index.html"
-        # data.json 存在时直接返回，不存在返回 404
         if parsed.path == "/" + DATA_FILE and not os.path.exists(DATA_FILE):
             self.send_error(404)
             return

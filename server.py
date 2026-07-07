@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
-"""
-仓库看板 HTTP 服务器
-- 静态文件服务（index.html, JS, CSS, images 等）
-- GET  /data.json  → 返回已有 JSON 数据（不存在返回 404）
-- POST /api/save   → 接收前端 JSON 并写入 data.json
-"""
+# -*- coding: utf-8 -*-
+
 import http.server
 import json
 import os
 from urllib.parse import urlparse
 
-PORT = 8080
+PORT = 9090
 DATA_FILE = "data.json"
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+
     def do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/save":
@@ -29,7 +26,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps({"ok": True}).encode())
-                print(f"[已保存] data.json ({len(data)} 条记录)")
+                print(f"[save] data.json ({len(data)} records)")
             except Exception as e:
                 self.send_response(500)
                 self.send_header("Content-Type", "application/json")
@@ -57,6 +54,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"仓库看板服务已启动：http://0.0.0.0:{PORT}/")
-    print(f"data.json {'已找到，将自动加载' if os.path.exists(DATA_FILE) else '不存在，请上传 Excel 文件'}")
+    print(f"Warehouse map server: http://0.0.0.0:{PORT}/")
+    print(f"data.json: {'found, will auto load' if os.path.exists(DATA_FILE) else 'not found, upload Excel to create'}")
     http.server.HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
